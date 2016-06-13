@@ -12,7 +12,7 @@ Example analyses with the [recount](https://github.com/leekgroup/recount) R pack
 * [Differential expression at the gene and exon levels](example_de/recount_SRP032789.html) ([PDF](example_de/recount_SRP032789.pdf))
 * [Annotation-agnostic differential expression](example_de/recount_DER_SRP032789.html) ([PDF](example_de/recount_DER_SRP032789.pdf))
 * [Concordance across studies at the gene level](example_de/recount_SRP019936.html) ([PDF](example_de/recount_SRP019936.pdf))
-* [GTEx counts comparison]() ([PDF]())
+* [GTEx counts comparison](example_gtex/compare_with_GTEx.html) ([PDF](example_gtex/compare_with_GTEx.pdf))
 
 
 # References
