@@ -1,52 +1,118 @@
 ---
-title: "recount (DER analyses)"
-author: "Kai Kammers and Shannon Ellis"
-date: "June 09, 2016"
-output: 
-  BiocStyle::html_document
+title: 'recount (DER analyses)'
+author: 'Kai Kammers and Shannon Ellis'
+date: 'June 09, 2016'
+output:
+  BiocStyle::html_document:
+    toc: true
   pdf_document:
-      toc: true
+    toc: true
 ---
 
-Here is an example of how to download and analyze a `RangedSummarizedExperiment` object with the gene counts with SRA study id [SRP032798](http://trace.ncbi.nlm.nih.gov/Traces/sra/?study=SRP032798). 
+```{r 'setup', echo = FALSE, warning = FALSE, message = FALSE}
+timestart <- Sys.time()
+
+## Bib setup
+library('knitcitations')
+
+## Load knitcitations with a clean bibliography
+cleanbib()
+cite_options(hyperlink = 'to.doc', citation_format = 'text', style = 'html')
+
+## Write bibliography information
+bibs <- c(
+    BiocParallel = citation('BiocParallel'),
+    BiocStyle = citation('BiocStyle'),
+    derfinder = citation('derfinder')[1],
+    devtools = citation('devtools'),
+    edgeR = citation('edgeR')[1],
+    GenomicRanges = citation('GenomicRanges'),
+    knitcitations = citation('knitcitations'),
+    matrixStats = citation('matrixStats'),
+    R = citation(),
+    recount = citation('recount'),
+    rmarkdown = citation('rmarkdown'),
+    RSkittleBrewer = citation('RSkittleBrewer'),
+    SummarizedExperiment = citation('SummarizedExperiment'),
+    topGO = citation('topGO'),
+    voom = RefManageR::BibEntry('article', key = 'voom', author = 'CW Law and Y Chen and W Shi and GK Smyth', year = '2014', title = 'Voom: precision weights unlock linear model analysis tools for RNA-seq read counts', journal = 'Genome Biology', volume = '15', pages = 'R29')
+)
+
+write.bibtex(bibs,
+    file = 'recount_DER_SRP032789.bib')
+bib <- read.bibtex('recount_DER_SRP032789.bib')
+
+## Assign short names
+names(bib) <- names(bibs)
+```
+
+Here is an example of how to download and analyze a `RangedSummarizedExperiment` object with the gene counts with SRA study id [SRP032789](http://trace.ncbi.nlm.nih.gov/Traces/sra/?study=SRP032789). 
 
 We first load the required packages.
 
-```{r load-packages, message=FALSE}
+```{r load-packages, message = FALSE, warning = FALSE}
 ## load libraries
-library(recount)
-library(SummarizedExperiment)
-library(limma)
-library(edgeR)
-library(qvalue)
-library(topGO)
-library(matrixStats)
-library(RSkittleBrewer)
-library(derfinder)
+library('recount')
+library('SummarizedExperiment')
+library('limma')
+library('edgeR')
+library('qvalue')
+library('topGO')
+library('matrixStats')
+library('RSkittleBrewer')
+library('derfinder')
+library('BiocParallel')
+library('GenomicRanges')
 
 ## set colors 
-trop <- RSkittleBrewer('tropical')[c(1,2)]
+trop <- RSkittleBrewer('tropical')[c(1, 2)]
 ```
 
 
 # Expressed regions
 ```{r er}
-regions_chr22 <- expressed_regions('SRP032789', 'chr22', cutoff = 5L, maxClusterGap = 3000L)
+chrs <- paste0('chr', c(1:22, 'X', 'Y'))
+bp <- SerialParam() ## Change if you have access to more cores
+
+if(!file.exists('regions_SRP032789.Rdata')) {
+    regions_list <- bplapply(chrs, function(chr) {
+        regs <- expressed_regions('SRP032789', chr, cutoff = 5L,
+            maxClusterGap = 3000L, verbose = FALSE)
+        return(regs)
+    }, BPPARAM = bp)
+    names(regions_list) <- chrs
+    regions <- unlist(GRangesList(regions_list))
+    
+    ## Save the regions
+    save(regions, regions_list, file = 'regions_SRP032789.Rdata')
+} else {
+    load('regions_SRP032789.Rdata')
+}
 
 ## Compute coverage matrix for study SRP032789, only for chromosome 22
-system.time( coverageMatrix_chr22 <- coverage_matrix('SRP032789', 'chr22', regions_chr22) )
+if(!file.exists('covMat_SRP032789.Rdata')) {
+    covMat <- bplapply(chrs, function(chr) {
+        coverageMatrix <- coverage_matrix('SRP032789', chr,
+            regions_list[[chr]], verbose = FALSE)
+        return(covMat)
+    }, BPPARAM = bp)
+    covMat <- do.call(rbind, covMat)
 
-## Round the coverage matrix to integers
-covMat <- round(coverageMatrix_chr22, 0)
-save(covMat, file="covMat.SRP032789_chr22.rda")
+    ## Round the coverage matrix to integers
+    covMat <- round(covMat, 0)
+    save(covMat, file = 'covMat_SRP032789.Rdata')
+} else {
+    load('covMat_SRP032789.Rdata')
+}
+
 ```
 
 ```{r filter-er}
 ## download phenotype data from 
 ## http://trace.ncbi.nlm.nih.gov/Traces/study/?acc=SRP032789
-pheno <- read.table('SraRunTable_SRP032789.txt', sep='\t', 
-                    header=TRUE,
-                    stringsAsFactors = FALSE)
+pheno <- read.table('SraRunTable_SRP032789.txt', sep = '\t', 
+    header=TRUE,
+    stringsAsFactors = FALSE)
 
 ## check ordering of samples
 pheno <- pheno[pheno$Run_s %in% colnames(covMat), ]
@@ -62,8 +128,8 @@ group <- pheno$tumor_type_s
 table(group)   
     
 ## subset data to HER2 and TNBC type
-covMat_filt <- covMat[, group %in% c("HER2 Positive Breast Tumor", "TNBC Breast Tumor")]
-group <- group[group %in% c("HER2 Positive Breast Tumor", "TNBC Breast Tumor")] 
+covMat_filt <- covMat[, group %in% c('HER2 Positive Breast Tumor', 'TNBC Breast Tumor')]
+group <- group[group %in% c('HER2 Positive Breast Tumor', 'TNBC Breast Tumor')] 
 dim(covMat_filt)
 
 ## filter count matrix
@@ -74,42 +140,71 @@ dim(counts)
 ```
 
 
-```{r voom-er, fig.height=8, fig.width=8}
+```{r voom-er, fig.height = 8, fig.width = 8}
 design <- model.matrix(~ group)
 design
 
-dge <- DGEList(counts=counts)
+dge <- DGEList(counts = counts)
 dge <- calcNormFactors(dge)
-v <- voom(dge,design,plot=TRUE)
-fit <- lmFit(v,design)
+v <- voom(dge, design,plot = TRUE)
+fit <- lmFit(v, design)
 fit <- eBayes(fit)
 log2FC <- fit$coefficients[, 2]
 p.mod <- fit$p.value[, 2]
 q.mod <- qvalue(p.mod)$q
 
 ## Volcano plot
-par(font.lab=2, cex.lab=1.2, font.axis=2, cex.axis=1.2)
-rx2 <- c(-1, 1)*1.1*max(abs(log2FC))
-ry2 <- c(-0.1, max(-log10(p.mod)))*1.1
+par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
+rx2 <- c(-1, 1) * 1.1 * max(abs(log2FC))
+ry2 <- c(-0.1, max(-log10(p.mod))) * 1.1
 plot(log2FC, -log10(p.mod), 
-     pch=19, xlim=rx2, ylim=ry2, col=trop[2],
-     xlab=bquote(paste(log[2], " (fold change)")), 
-     ylab=bquote(paste(-log[10], " (p-value)")))
-abline(v=seq(-10,10,1), col="lightgray", lty="dotted")
-abline(h=seq(0,23,1), col="lightgray", lty="dotted")
-points(log2FC, -log10(p.mod), pch=19, col=trop[2])
-title("Volcano plot: TNBC vs. HER2+ in SRP032789 (er level)")
+     pch = 19, xlim = rx2, ylim = ry2, col = trop[2],
+     xlab = bquote(paste(log[2], ' (fold change)')), 
+     ylab = bquote(paste(-log[10], ' (p-value)')))
+abline(v = seq(-10, 10, 1), col = 'lightgray', lty = 'dotted')
+abline(h = seq(0, 23, 1), col = 'lightgray', lty = 'dotted')
+points(log2FC, -log10(p.mod), pch = 19, col = trop[2])
+title('Volcano plot: TNBC vs. HER2+ in SRP032789 (er level)')
 ```
 
 
 
-# Technical reproducibility information
-```{r TRI}
-## Reproducibility info
-proc.time()
+# Reproducibility
+
+This analysis report was made possible thanks to:
+
+* R `r citep(bib[['R']])`
+* `r Biocpkg('BiocParallel')` `r citep(bib[['BiocParallel']])`
+* `r Biocpkg('BiocStyle')` `r citep(bib[['BiocStyle']])`
+* `r Biocpkg('derfinder')` `r citep(bib[['derfinder']])`
+* `r CRANpkg('devtools')` `r citep(bib[['devtools']])`
+* `r Biocpkg('edgeR')` `r citep(bib[['edgeR']])`
+* `r Biocpkg('GenomicRanges')` `r citep(bib[['GenomicRanges']])`
+* `r CRANpkg('knitcitations')` `r citep(bib[['knitcitations']])`
+* `r CRANpkg('matrixStats')` `r citep(bib[['matrixStats']])`
+* `r Githubpkg('leekgroup/recount')` `r citep(bib[['recount']])`
+* `r CRANpkg('rmarkdown')` `r citep(bib[['rmarkdown']])`
+* `r Githubpkg('alyssafrazee/RSkittleBrewer')` `r citep(bib[['RSkittleBrewer']])`
+* `r Biocpkg('SummarizedExperiment')` `r citep(bib[['SummarizedExperiment']])`
+* `r Biocpkg('topGO')` `r citep(bib[['topGO']])`
+* `r Biocpkg('limma')` `r citep(bib[['voom']])`
+
+[Bibliography file](recount_DER_SRP032789.bib)
+
+```{r bibliography, results='asis', echo=FALSE, warning = FALSE}
+## Print bibliography
+bibliography()
+```
+
+
+```{r reproducibility}
+## Time spent creating this report:
+diff(c(timestart, Sys.time()))
+
+## Date this report was generated
 message(Sys.time())
+
+## Reproducibility info
 options(width = 120)
 devtools::session_info()
 ```
-
-This document was processed on: `r Sys.Date()`.
