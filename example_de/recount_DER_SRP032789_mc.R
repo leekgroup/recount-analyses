@@ -27,8 +27,9 @@ print(object.size(regions), units = 'Mb')
 if(!file.exists('covMat_SRP032789.Rdata')) {
     covMat <- bplapply(chrs, function(chr) {
         coverageMatrix <- coverage_matrix('SRP032789', chr,
-            regions_list[[chr]], verbose = FALSE)
-        return(covMat)
+            regions_list[[chr]], verboseLoad = FALSE,
+            outdir = '/dcl01/leek/data/sra_to_upload3/SRP032789')
+        return(coverageMatrix)
     }, BPPARAM = bp)
     covMat <- do.call(rbind, covMat)
 
