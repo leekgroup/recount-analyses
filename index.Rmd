@@ -9,8 +9,8 @@ output:
 Example analyses with the [recount](https://github.com/leekgroup/recount) R package using the [recount project](https://jhubiostatistics.shinyapps.io/recount/).
 
 * [Meta analysis](example_meta/meta_analysis.html) ([PDF](example_meta/meta_analysis.pdf))
-* [Differential expression at the gene level](example_de/recount_SRP019936.html) ([PDF](example_de/recount_SRP019936.pdf))
-* [Differential expression at the exon level](example_de/recount_SRP032789.html) ([PDF](example_de/recount_SRP032789.pdf))
+* [Differential expression at the gene and exon level](example_de/recount_SRP032789.html) ([PDF](example_de/recount_SRP032789.pdf))
+* [Concordance across studies at the gene level](example_de/recount_SRP019936.html) ([PDF](example_de/recount_SRP019936.pdf))
 * [Annotation-agnostic differential expression](example_de/recount_DER_SRP032789.html) ([PDF](example_de/recount_DER_SRP032789.pdf))
 * [GTEx counts comparison]() ([PDF]())
 
