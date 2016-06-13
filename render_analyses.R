@@ -34,6 +34,7 @@ files <- dir(pattern = 'Rmd', full.names = TRUE, include.dirs = TRUE,
 ## Creates HTML versions
 sapply(files, render)
 
-## Creates PDF versions and save the files (for plots)
+## Creates PDF versions and save the files (useful for keeping PDF versions of
+## the plots)
 sapply(files[-which(files == './index.Rmd')], render,
     output_format = 'pdf_document', clean = FALSE)
