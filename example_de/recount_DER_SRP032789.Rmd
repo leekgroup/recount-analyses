@@ -93,8 +93,8 @@ if(!file.exists('regions_SRP032789.Rdata')) {
 if(!file.exists('covMat_SRP032789.Rdata')) {
     covMat <- bplapply(chrs, function(chr) {
         coverageMatrix <- coverage_matrix('SRP032789', chr,
-            regions_list[[chr]], verbose = FALSE)
-        return(covMat)
+            regions_list[[chr]], verboseLoad = FALSE)
+        return(coverageMatrix)
     }, BPPARAM = bp)
     covMat <- do.call(rbind, covMat)
 
