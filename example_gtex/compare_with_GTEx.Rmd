@@ -1,6 +1,12 @@
 ---
-author: "Andrew E. Jaffe and Kasper D. Hansen"
-title: Comparison of Recount with GTEx"
+title: 'Comparison of Recount with GTEx'
+author: 'Andrew E. Jaffe and Kasper D. Hansen'
+date: 'June 09, 2016'
+output:
+  BiocStyle::html_document:
+    toc: true
+  pdf_document:
+    toc: true
 ---
 
 # Overview
@@ -12,16 +18,49 @@ This document compares GTEx data release v6 to Recount.  The main issue addresse
 
 # Dependencies
 
+```{r 'setup', echo = FALSE, warning = FALSE, message = FALSE}
+timestart <- Sys.time()
+
+## Bib setup
+library('knitcitations')
+
+## Load knitcitations with a clean bibliography
+cleanbib()
+cite_options(hyperlink = 'to.doc', citation_format = 'text', style = 'html')
+
+## Write bibliography information
+bibs <- c(
+    ballgown = citation('ballgown'),
+    BiocStyle = citation('BiocStyle'),
+    coop = citation('coop'),
+    devtools = citation('devtools'),
+    knitcitations = citation('knitcitations'),
+    org.Hs.eg.db = citation('org.Hs.eg.db'),
+    R = citation(),
+    recount = citation('recount'),
+    rmarkdown = citation('rmarkdown'),
+    stringr = citation('stringr'),
+    SummarizedExperiment = citation('SummarizedExperiment')
+)
+
+write.bibtex(bibs,
+    file = 'compare_with_GTEx.bib')
+bib <- read.bibtex('compare_with_GTEx.bib')
+
+## Assign short names
+names(bib) <- names(bibs)
+```
+
 ## R packages
 
 ```{r dependencies}
-library(SummarizedExperiment)
-library(stringr)
-library(recount)
-library(rtracklayer)
-library(org.Hs.eg.db)
-library(ballgown)
-library(coop)
+library('SummarizedExperiment')
+library('stringr')
+library('recount')
+library('rtracklayer')
+library('org.Hs.eg.db')
+library('ballgown')
+library('coop')
 ```
 
 ## Data objects
@@ -29,6 +68,14 @@ library(coop)
 ### From Recount
 
 ```{r loadRecount}
+## Download the GTEx data
+if(FALSE ) {
+    if(!file.exists(file.path('SRP012682', 'rse_gene.Rdata'))) {
+        download_study('SRP012682')
+    }
+    load(file.path('SRP012682', 'rse_gene.Rdata'))
+}
+## Temporarely use:
 load("/dcl01/leek/data/recount-website/rse/rse_gtex/SRP012682/rse_gene.Rdata")
 ```
 
@@ -106,8 +153,7 @@ fullPd = fullPd[match(colnames(gtexCounts), fullPd$SAMPID),]
 
 ###########################
 ## data from recount ######
-load("/dcl01/leek/data/sra_to_upload3/SRP012682/rse_gene.Rdata")
-recountPd = read.delim("/dcl01/leek/data/sra_to_upload3/SRP012682/SRP012682.tsv")
+recountPd <- all_metadata('gtex')
 rse_gene2 <- scale_counts(rse_gene)
 recountCounts = assays(rse_gene)$counts
 recountMap = rowRanges(rse_gene)
@@ -132,14 +178,14 @@ recountPd = recountPd[gtexPd$sra_accession,]
 
 save(gtexCounts, gtexMap, gtexPd, 
      recountPd, recountCounts, recountMap,
-     file = "/dcl01/leek/data/recount-website/GTEx_checks/GTEx_websiteAndRecount_EntrezMatched_17559_vs_8551.rda",
+     file = "GTEx_websiteAndRecount_EntrezMatched_17559_vs_8551.Rdata",
      compress=TRUE)
 ```
 
 # Comparison
 
 ```{r loadMap}
-load("/dcl01/leek/data/recount-website/GTEx_checks/GTEx_websiteAndRecount_EntrezMatched_17559_vs_8551.rda")
+load("GTEx_websiteAndRecount_EntrezMatched_17559_vs_8551.Rdata")
 gtexCounts <- as.matrix(gtexCounts)
 ```
 
@@ -177,7 +223,9 @@ dev.off()
 
 Between colon and blood
 
-```{r}
+```{r 'inProgress', eval = FALSE}
+## This code is incomplete / in progress
+
 gtex_metadata <- all_metadata("gtex")
 gtex_metadata2 <- subset(gtex_metadata, smtsd %in% c("Whole Blood", "Colon"))[, c("run", "smtsd", "smgebtch")]
 colnames(gtex_metadata2)[c(2,3)] <- c("tissue", "batch")
@@ -197,4 +245,40 @@ v <- gtex <- voom(dge <- gtex,design <- gtex,plot=TRUE)
 fit <- gtex <- lmFit(v <- gtex,design <- gtex)
 fit <- gtex <- eBayes(fit <- gtex)
 hist(fit <- gtex$p.value[,2],col=trop[2],main="DE",breaks=100)
+```
 
+# Reproducibility
+
+This analysis report was made possible thanks to:
+
+* R `r citep(bib[['R']])`
+* `r Biocpkg('ballgown')` `r citep(bib[['ballgown']])`
+* `r Biocpkg('BiocStyle')` `r citep(bib[['BiocStyle']])`
+* `r CRANpkg('coop')` `r citep(bib[['coop']])`
+* `r CRANpkg('devtools')` `r citep(bib[['devtools']])`
+* `r CRANpkg('knitcitations')` `r citep(bib[['knitcitations']])`
+* `r Biocpkg('org.Hs.eg.db')` `r citep(bib[['org.Hs.eg.db']])`
+* `r Githubpkg('leekgroup/recount')` `r citep(bib[['recount']])`
+* `r CRANpkg('rmarkdown')` `r citep(bib[['rmarkdown']])`
+* `r CRANpkg('stringr')` `r citep(bib[['stringr']])`
+* `r Biocpkg('SummarizedExperiment')` `r citep(bib[['SummarizedExperiment']])`
+
+[Bibliography file](compare_with_GTEx.bib)
+
+```{r bibliography, results='asis', echo=FALSE, warning = FALSE}
+## Print bibliography
+bibliography()
+```
+
+
+```{r reproducibility}
+## Time spent creating this report:
+diff(c(timestart, Sys.time()))
+
+## Date this report was generated
+message(Sys.time())
+
+## Reproducibility info
+options(width = 120)
+devtools::session_info()
+```
