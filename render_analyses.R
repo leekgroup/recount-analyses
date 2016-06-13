@@ -1,0 +1,40 @@
+## Install all dependencies if needed
+
+source("https://bioconductor.org/biocLite.R")
+useDevel(TRUE) ## recount requires the devel version of rtracklayer (>= 1.33.3)
+
+## Bioconductor or CRAN packages
+biocLite(c('BiocParallel', 'BiocStyle', 'derfinder', 'devtools', 'dplyr', 'edgeR', 'ffpe', 'GenomicRanges', 'IHW', 'knitcitations', 'limma', 'magrittr', 'matrixStats', 'qvalue', 'rmarkdown', 'SummarizedExperiment', 'topGO'))
+
+## GitHub packages
+devtools::install_github('leekgroup/recount')
+devtools::install_github('alyssafrazee/RSkittleBrewer')
+
+
+## Render all the files in this repo:
+library('rmarkdown')
+library('BiocStyle')
+
+## The following code assumes that your current working directory is where
+## the file "render.R" is located at. If you need to change your working
+## directory use the functions getwd() and setwd().
+
+## Use code like this to render a specific file (HTML output by default)
+render('example_meta/meta_analysis.Rmd')
+
+## Renders the same file but in PDF format and doesn't clean the output files
+## which can be useful for keeping figures in PDF format.
+render('example_meta/meta_analysis.Rmd', output_format = 'pdf_document',
+    clean = FALSE)
+
+## This code renders the index.Rmd files for all protocols, which you might
+## not want to do.
+files <- dir(pattern = 'Rmd', full.names = TRUE, include.dirs = TRUE,
+    recursive = TRUE)
+
+## Creates HTML versions
+sapply(files, render)
+
+## Creates PDF versions and save the files (for plots)
+sapply(files[-which(files == './index.Rmd')], render,
+    output_format = 'pdf_document', clean = FALSE)
