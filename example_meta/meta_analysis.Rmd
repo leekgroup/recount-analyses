@@ -1,17 +1,15 @@
 ---
 title: "Recount Meta-Analysis"
-author: "Jeff Leek"
+author: "Jeff Leek and Margaret Taub"
 date: "June 7, 2016"
-output: html_document
+output: 
+  BiocStyle::html_document
+  pdf_document:
+      toc: true
 ---
 
+
 ## Set the working directory
-
-The code downloads several directories so we set the local directory. You will want to change this to something on your local machine before running this. 
-
-```{r setwd}
-setwd("~/Dropbox/Jeff/2016/recount")
-```
 
 ## Load libraries we will need
 
@@ -48,7 +46,10 @@ proj = c(colon_proj,blood_proj)
 Now we load these data sets into R and calculate the number of genes and samples for each data set
 
 ```{r loaddata}
-dat = lapply(proj, function(x) { load(file.path(x, 'rse_gene.Rdata')); return(rse_gene)})
+dat = lapply(proj, function(x) { 
+    load(file.path(x, 'rse_gene.Rdata'))
+    return(rse_gene)
+})
 proj
 sapply(dat,dim)
 ```
@@ -206,12 +207,15 @@ topTable(fit_gtex_lung,coef=2)
 Make CAT plots and compare different analyses. 
 
 ```{r catplots}
-cat_sra_gtex = CATplot(-rank(fit$coefficients[,2]),
-                       -rank(-fit_gtex$coefficients[,2]),maxrank=1000,ylim=c(0,1))
-cat_sra_gtex_lung = CATplot(-rank(fit$coefficients[,2]),
-                            -rank(-fit_gtex_lung$coefficients[,2]),maxrank=1000,ylim=c(0,1))
-cat_sra_gtex_batch = CATplot(-rank(fit$coefficients[,2]),
-                             -rank(-fit_gtex_lung$coefficients[,3]),maxrank=1000,ylim=c(0,1))
+cat_sra_gtex = CATplot(
+    -rank(fit$coefficients[,2]),
+    -rank(-fit_gtex$coefficients[,2]), maxrank=1000, ylim=c(0,1))
+cat_sra_gtex_lung = CATplot(
+    -rank(fit$coefficients[,2]),
+    -rank(-fit_gtex_lung$coefficients[,2]), maxrank=1000, ylim=c(0,1))
+cat_sra_gtex_batch = CATplot(
+    -rank(fit$coefficients[,2]),
+    -rank(-fit_gtex_lung$coefficients[,3]), maxrank=1000, ylim=c(0,1))
 
 plot(cat_sra_gtex,type="l",col=trop[1],lwd=3)
 lines(cat_sra_gtex_lung,type="l",col=trop[2],lwd=3)
@@ -223,6 +227,8 @@ legend(0,0.5,legend=c("Same Tisue","Different Tissues","Tissue vs. Batch"),col=t
 ## Session Info
 
 ```{r sessioninfo}
+
+options(width = 120)
 session_info()
 ```
 
