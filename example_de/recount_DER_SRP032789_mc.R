@@ -3,7 +3,7 @@ library('recount')
 library('BiocParallel')
 
 chrs <- paste0('chr', c(1:22, 'X', 'Y'))
-bp <- MulticoreParam(workers = 10)
+bp <- MulticoreParam(workers = 10, outfile = Sys.getenv('SGE_STDERR_PATH'))
 
 if(!file.exists('regions_SRP032789.Rdata')) {
     regions_list <- bplapply(chrs, function(chr) {
