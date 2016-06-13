@@ -1,0 +1,438 @@
+---
+title: "recount (overlay two studies)"
+author: "Kai Kammers and Shannon Ellis"
+date: "June 09, 2016"
+output: 
+  BiocStyle::html_document
+  pdf_document:
+      toc: true
+---
+
+Here we label inthe following way:
+
+-   study1 = SRP019936 (that is the 'new' study)
+-   study2 = SRP032798 (this is the study that we used for gene, exon, and expressed region analyses)
+
+
+# Load R-packages
+```{r load-packages, message=FALSE}
+## load libraries
+library(recount)
+library(SummarizedExperiment)
+library(limma)
+library(edgeR)
+library(qvalue)
+library(matrixStats)
+library(RSkittleBrewer)
+library(IHW)
+```
+
+
+
+# Gene level analysis
+```{r download-study1}
+## Find the project of interest (SRP019936), e.g. with parts of the abstract
+project_info1 <- abstract_search('model for HER2 positive breast tumors')
+project_info1
+
+## Download the gene-level RangedSummarizedExperiment data
+download_study(project_info1$project)
+
+## Load the data
+load(file.path(project_info1$project, 'rse_gene.Rdata'))
+rse_gene1 <- rse_gene
+
+## Browse the project at SRA
+browse_study(project_info1$project)
+
+## This is the sample phenotype data provided by the recount project
+colData(rse_gene1)
+
+## gene info 
+rowData(rse_gene1)
+```
+
+
+```{r filter-study1}
+## Scale counts by taking into account the total coverage per sample
+rse1 <- scale_counts(rse_gene1)
+
+## download pheno data from 
+## http://trace.ncbi.nlm.nih.gov/Traces/study/?acc=SRP019936
+pheno1 <- read.table('SraRunTable_SRP019936.txt', sep='\t', 
+                    header=TRUE,
+                    stringsAsFactors = FALSE)
+## obtain correct order for pheno data
+pheno1 <- pheno1[match(rse1$run, pheno1$Run_s), ]
+identical(pheno1$Run_s, rse1$run)
+head(cbind(pheno1$Run_s, rse1$run))
+
+## obtain grouping information
+colData(rse1)$group <- pheno1$tissue_s
+table(colData(rse1)$group)   
+      
+## subset data to HER2 and TNBC types
+rse1 <- rse1[, rse1$group %in% c("HER2+ Breast Tumor", "Triple Negative Breast Tumor")]
+rse1
+
+## obtain count matrix
+counts1 <- assays(rse1)$counts
+
+## filter count matrix
+filter <- apply(counts1, 1, function(x) mean(x) > 5)
+counts1 <- counts1[filter, ]
+dim(counts1)
+```
+
+
+```{r exploratory-genes, fig.height=8, fig.width=8}
+## set colors 
+trop <- RSkittleBrewer('tropical')[c(1,2)]
+cols <- as.numeric(as.factor(rse1$group))
+
+## Look at mean variance relationship
+plot(rowMeans(log2(counts1 + 1)), rowVars(log2(counts1+1)),
+     pch=19, col=trop[2])
+
+## calculate PCs with svd function
+expr.pca <- svd(counts1 - rowMeans(counts1))
+
+## plot PCs
+par(font.lab=2, cex.lab=1.2, font.axis=2, cex.axis=1.2)
+plot(expr.pca$d^2/sum(expr.pca$d^2), pch=19, col=trop[2], cex=1.5,
+     ylab="Percent of variance explained (gene level)", xlab="PC #",
+     main="PCs")
+
+##plot PC1 vs. PC2
+par(font.lab=2, cex.lab=1.2, font.axis=2, cex.axis=1.2)
+plot(expr.pca$v[, 1], expr.pca$v[, 2], pch=19, col=trop[cols], cex=1.5,
+     xlab="PC1", ylab="PC2",
+     main="PC (gene level)")
+legend("topright", pch=19, col=trop[c(1,2)],
+       names(summary(as.factor(rse1$group))))
+```
+
+```{r filter-study1-2}
+## Scale counts by taking into account the total coverage per sample
+rse1 <- scale_counts(rse_gene1)
+
+## download pheno data from 
+## http://trace.ncbi.nlm.nih.gov/Traces/study/?acc=SRP019936
+pheno1 <- read.table('SraRunTable_SRP019936.txt', sep='\t', 
+                    header=TRUE,
+                    stringsAsFactors = FALSE)
+## obtain correct order for pheno data
+pheno1 <- pheno1[match(rse1$run, pheno1$Run_s), ]
+identical(pheno1$Run_s, rse1$run)
+head(cbind(pheno1$Run_s, rse1$run))
+
+## obtain grouping information
+colData(rse1)$group <- pheno1$tissue_s
+table(colData(rse1)$group)   
+      
+## subset data to HER2 and TNBC types
+rse1 <- rse1[, rse1$group %in% c("HER2+ Breast Tumor", "Triple Negative Breast Tumor")]
+rse1
+
+rse1 <- rse1[, -15]
+rse1
+## obtain count matrix
+counts1 <- assays(rse1)$counts
+
+## filter count matrix
+filter <- apply(counts1, 1, function(x) mean(x) > 5)
+counts1 <- counts1[filter, ]
+dim(counts1)
+```
+
+
+```{r exploratory-genes-2, fig.height=8, fig.width=8}
+## set colors 
+trop <- RSkittleBrewer('tropical')[c(1,2)]
+cols <- as.numeric(as.factor(rse1$group))
+
+## Look at mean variance relationship
+plot(rowMeans(log2(counts1 + 1)), rowVars(log2(counts1+1)),
+     pch=19, col=trop[2])
+
+## calculate PCs with svd function
+expr.pca <- svd(counts1 - rowMeans(counts1))
+
+## plot PCs
+par(font.lab=2, cex.lab=1.2, font.axis=2, cex.axis=1.2)
+plot(expr.pca$d^2/sum(expr.pca$d^2), pch=19, col=trop[2], cex=1.5,
+     ylab="Percent of variance explained (gene level)", xlab="PC #",
+     main="PCs")
+
+##plot PC1 vs. PC2
+par(font.lab=2, cex.lab=1.2, font.axis=2, cex.axis=1.2)
+plot(expr.pca$v[, 1], expr.pca$v[, 2], pch=19, col=trop[cols], cex=1.5,
+     xlab="PC1", ylab="PC2",
+     main="PC (gene level)")
+legend("topright", pch=19, col=trop[c(1,2)],
+       names(summary(as.factor(rse1$group))))
+```
+
+
+
+
+```{r voom-study1-2, fig.height=8, fig.width=8}
+## Perform differential expression analysis with limma-voom
+design <- model.matrix(~ rse1$group)
+design
+
+dge <- DGEList(counts=counts1)
+dge <- calcNormFactors(dge)
+v <- voom(dge,design,plot=TRUE)
+fit <- lmFit(v,design)
+fit <- eBayes(fit)
+log2FC1 <- fit$coefficients[, 2]
+t.mod1 <- fit$t[, 2]
+p.mod1 <- fit$p.value[, 2]
+q.mod1 <- qvalue(p.mod1)$q
+
+## Histogram
+par(font.lab=2, cex.lab=1.2, font.axis=2, cex.axis=1.2)
+hist(p.mod1, col=trop[2], xlab="p-value",
+     main="Histogramm of p-values", breaks=100)
+
+
+## Volcano plot
+par(font.lab=2, cex.lab=1.2, font.axis=2, cex.axis=1.2)
+rx2 <- c(-1, 1)*1.1*max(abs(log2FC1))
+ry2 <- c(-0.1, max(-log10(p.mod1)))*1.1
+plot(log2FC1, -log10(p.mod1), 
+     pch=19, xlim=rx2, ylim=ry2, col=trop[2],
+     xlab=bquote(paste(log[2], " (fold change)")), 
+     ylab=bquote(paste(-log[10], " (p-value)")))
+abline(v=seq(-10,10,1), col="lightgray", lty="dotted")
+abline(h=seq(0,23,1), col="lightgray", lty="dotted")
+points(log2FC1, -log10(p.mod1), pch=19, col=trop[2])
+title("Volcano plot: TNBC vs. HER2+ in SRP019936 (gene level)")
+```
+
+
+
+# Independence hypotheses weighting
+```{r IHW, fig.height=8, fig.width=8}
+## Find second project of interest (SRP032798), e.g. with parts of the abstract
+project_info2 <- abstract_search('To define the digital transcriptome of three breast cancer')
+
+## Download the gene-level RangedSummarizedExperiment data
+download_study(project_info2$project)
+
+## Load the data
+load(file.path(project_info2$project, 'rse_gene.Rdata'))
+rse_gene2 <- rse_gene
+
+## Scale counts by taking into account the total coverage per sample
+rse2 <- scale_counts(rse_gene2)
+
+## download additional phenotype data from 
+## http://trace.ncbi.nlm.nih.gov/Traces/study/?acc=SRP032789
+pheno2 <- read.table('SraRunTable_SRP032789.txt', sep='\t', 
+                    header=TRUE,
+                    stringsAsFactors = FALSE)
+
+## obtain correct order for pheno data
+pheno2 <- pheno2[match(rse2$run, pheno2$Run_s), ]
+identical(pheno2$Run_s, rse2$run)
+head(cbind(pheno2$Run_s, rse2$run))
+
+## obtain grouping information
+colData(rse2)$group <- pheno2$tumor_type_s
+table(colData(rse2)$group)   
+    
+## subset data to HER2 and TNBC types
+rse2 <- rse2[, rse2$group %in% c("HER2 Positive Breast Tumor", "TNBC Breast Tumor")]
+rse2 
+
+## obtain count matrix without filtering
+counts2 <- assays(rse2)$counts
+dim(counts2)
+```
+
+
+```{r voom-study2}
+## Perform differential expression analysis with limma-voom
+design <- model.matrix(~ rse2$group)
+design
+
+dge <- DGEList(counts=counts2)
+dge <- calcNormFactors(dge)
+v <- voom(dge,design,plot=TRUE)
+fit <- lmFit(v,design)
+fit <- eBayes(fit)
+t.mod2 <- fit$t[, 2]
+log2FC2 <- fit$coefficients[, 2]
+p.mod2 <- fit$p.value[, 2]
+q.mod2 <- qvalue(p.mod2)$q
+
+
+## some summary statistics
+sum(p.mod1 <= 0.05)
+sum(q.mod1 <= 0.05)
+
+sum(p.mod2 <= 0.05)
+sum(q.mod2 <= 0.05)
+
+## use those genes from study 2 that are kept in study 1 
+t.mod2 <- t.mod2[names(t.mod1)]
+
+## use p-values from study 2 as weights for study 1
+ihw_res <- ihw(p.mod1 ~ t.mod2, alpha = 0.05)
+rejections(ihw_res)
+
+head(ihw_res@df)
+padj_bh_ihw <- p.adjust(ihw_res@df$weighted_pvalue, method = "BH")
+padj_bh <- p.adjust(p.mod1, method = "BH")
+sum(padj_bh_ihw <= 0.05, na.rm = TRUE)
+sum(padj_bh <= 0.05, na.rm = TRUE)
+
+par(mfrow=c(1,2))
+hist(ihw_res@df$weighted_pvalue)
+hist(p.mod1)
+
+
+
+## use counts as weights for study 1
+counts1.mean <- apply(counts1, 1, mean)
+ihw_res <- ihw(p.mod1 ~ counts1.mean, alpha = 0.05)
+rejections(ihw_res)
+
+head(ihw_res@df)
+padj_bh_ihw <- p.adjust(ihw_res@df$weighted_pvalue, method = "BH")
+padj_bh <- p.adjust(p.mod1, method = "BH")
+sum(padj_bh_ihw <= 0.05, na.rm = TRUE)
+sum(padj_bh <= 0.05, na.rm = TRUE)
+
+par(mfrow=c(1,2))
+hist(ihw_res@df$weighted_pvalue)
+hist(p.mod1)
+```
+
+
+# Concordance across studies
+
+## p-values from both studies
+```{r, con, fig.width=8, fig.height=8}
+## filter count matrix for study 2
+filter <- apply(counts2, 1, function(x) mean(x) > 5)
+counts2 <- counts2[filter, ]
+dim(counts2)
+
+## filter p-values for study 2 (was not filtered before)
+p.mod2 <- p.mod2[rownames(counts2)]
+
+## sort p-values
+p.mod1.sort <- p.mod1[order(p.mod1)]
+p.mod2.sort <- p.mod2[order(p.mod2)]
+
+
+## overlap for genes between studies
+table(names(p.mod1.sort) %in% names(p.mod2.sort))
+table(names(p.mod2.sort) %in% names(p.mod1.sort))
+
+conc <- NULL
+for(i in 1:length(p.mod1.sort)){
+    conc[i] <- sum(names(p.mod1.sort)[1:i] %in% names(p.mod2.sort)[1:i])
+}
+
+## all genes
+par(mfrow=c(1,1), font.lab=1.5, cex.lab=1.2, font.axis=1.5, cex.axis=1.2)
+plot(seq(1:length(p.mod1.sort)), conc, 
+     type="l", las=0,
+     xlim=c(0,20000),
+     ylim=c(0,20000),
+     xlab='ordered genes in study 1',
+     ylab='ordered genes in study 2',
+     main='Concordance')
+for(k in 1:3){
+    abline(v=k*5000, cex=0.5, col="lightgrey")
+    abline(h=k*5000, cex=0.5, col="lightgrey")
+}
+lines(seq(1:length(p.mod1.sort)), conc, col="black", lwd=2)
+
+
+## top 1000 genes
+par(mfrow=c(1,1), font.lab=1.5, cex.lab=1.2, font.axis=1.5, cex.axis=1.2)
+plot(seq(1:1000), conc[1:1000], 
+     type="l", las=0,
+     xlim=c(0,1000),
+     ylim=c(0,1000),
+     xlab='ordered genes in study 1',
+     ylab='ordered genes in study 2',
+     main='Concordance')
+for(k in 1:2){
+    abline(v=k*500, cex=0.5, col="lightgrey")
+    abline(h=k*500, cex=0.5, col="lightgrey")
+}
+lines(seq(1:1000), conc[1:1000], col="black", lwd=2)
+```
+
+
+## p-values IHW and raw p-values
+```{r, con-IHW, fig.width=8, fig.height=8}
+## use t-values from study 2 as weights for study 1
+ihw_res <- ihw(p.mod1 ~ t.mod2, alpha = 0.05)
+
+## sort p-values
+p.mod1.sort <- p.mod1[order(p.mod1)]
+p.mod2 <- ihw_res@df$weighted_pvalue
+names(p.mod2) <- rownames(ihw_res@df)
+p.mod2.sort <- p.mod2[order(p.mod2)]
+
+## overlap for genes between studies
+table(names(p.mod1.sort) %in% names(p.mod2.sort))
+table(names(p.mod2.sort) %in% names(p.mod1.sort))
+
+conc <- NULL
+for(i in 1:length(p.mod1.sort)){
+    conc[i] <- sum(names(p.mod1.sort)[1:i] %in% names(p.mod2.sort)[1:i])
+}
+
+## all genes
+par(mfrow=c(1,1), font.lab=1.5, cex.lab=1.2, font.axis=1.5, cex.axis=1.2)
+plot(seq(1:length(p.mod1.sort)), conc, 
+     type="l", las=0,
+     xlim=c(0,20000),
+     ylim=c(0,20000),
+     xlab='ordered genes without IHW',
+     ylab='ordered genes with IHW',
+     main='Concordance')
+for(k in 1:3){
+    abline(v=k*5000, cex=0.5, col="lightgrey")
+    abline(h=k*5000, cex=0.5, col="lightgrey")
+}
+lines(seq(1:length(p.mod1.sort)), conc, col="black", lwd=2)
+
+
+## top 2000 genes
+par(mfrow=c(1,1), font.lab=1.5, cex.lab=1.2, font.axis=1.5, cex.axis=1.2)
+plot(seq(1:2000), conc[1:2000], 
+     type="l", las=0,
+     xlim=c(0,2000),
+     ylim=c(0,2000),
+     xlab='ordered genes without IHW',
+     ylab='ordered genes with IHW',
+     main='Concordance')
+for(k in 1:4){
+    abline(v=k*500, cex=0.5, col="lightgrey")
+    abline(h=k*500, cex=0.5, col="lightgrey")
+}
+lines(seq(1:2000), conc[1:2000], col="black", lwd=2)
+```
+
+
+
+
+# Technical reproducibility information
+```{r TRI}
+## Reproducibility info
+proc.time()
+message(Sys.time())
+options(width = 120)
+devtools::session_info()
+```
+
+This document was processed on: `r Sys.Date()`.

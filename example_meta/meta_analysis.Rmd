@@ -227,8 +227,10 @@ legend(0,0.5,legend=c("Same Tisue","Different Tissues","Tissue vs. Batch"),col=t
 ## Session Info
 
 ```{r sessioninfo}
-
+## Reproducibility info
+proc.time()
+message(Sys.time())
 options(width = 120)
-session_info()
+devtools::session_info()
 ```
 

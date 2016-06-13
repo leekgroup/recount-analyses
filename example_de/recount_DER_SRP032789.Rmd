@@ -1,0 +1,115 @@
+---
+title: "recount (DER analyses)"
+author: "Kai Kammers and Shannon Ellis"
+date: "June 09, 2016"
+output: 
+  BiocStyle::html_document
+  pdf_document:
+      toc: true
+---
+
+Here is an example of how to download and analyze a `RangedSummarizedExperiment` object with the gene counts with SRA study id [SRP032798](http://trace.ncbi.nlm.nih.gov/Traces/sra/?study=SRP032798). 
+
+We first load the required packages.
+
+```{r load-packages, message=FALSE}
+## load libraries
+library(recount)
+library(SummarizedExperiment)
+library(limma)
+library(edgeR)
+library(qvalue)
+library(topGO)
+library(matrixStats)
+library(RSkittleBrewer)
+library(derfinder)
+
+## set colors 
+trop <- RSkittleBrewer('tropical')[c(1,2)]
+```
+
+
+# Expressed regions
+```{r er}
+regions_chr22 <- expressed_regions('SRP032789', 'chr22', cutoff = 5L, maxClusterGap = 3000L)
+
+## Compute coverage matrix for study SRP032789, only for chromosome 22
+system.time( coverageMatrix_chr22 <- coverage_matrix('SRP032789', 'chr22', regions_chr22) )
+
+## Round the coverage matrix to integers
+covMat <- round(coverageMatrix_chr22, 0)
+save(covMat, file="covMat.SRP032789_chr22.rda")
+```
+
+```{r filter-er}
+## download phenotype data from 
+## http://trace.ncbi.nlm.nih.gov/Traces/study/?acc=SRP032789
+pheno <- read.table('SraRunTable_SRP032789.txt', sep='\t', 
+                    header=TRUE,
+                    stringsAsFactors = FALSE)
+
+## check ordering of samples
+pheno <- pheno[pheno$Run_s %in% colnames(covMat), ]
+identical(pheno$Run_s, colnames(covMat))
+
+## obain correct order for pheno data
+pheno <- pheno[match(colnames(covMat), pheno$Run_s), ]
+identical(pheno$Run_s, colnames(covMat))
+head(cbind(pheno$Run_s, colnames(covMat)))
+
+## find grouping information
+group <- pheno$tumor_type_s
+table(group)   
+    
+## subset data to HER2 and TNBC type
+covMat_filt <- covMat[, group %in% c("HER2 Positive Breast Tumor", "TNBC Breast Tumor")]
+group <- group[group %in% c("HER2 Positive Breast Tumor", "TNBC Breast Tumor")] 
+dim(covMat_filt)
+
+## filter count matrix
+counts <- covMat_filt
+filter <- apply(counts, 1, function(x) mean(x) > 5)
+counts <- counts[filter, ]
+dim(counts)
+```
+
+
+```{r voom-er, fig.height=8, fig.width=8}
+design <- model.matrix(~ group)
+design
+
+dge <- DGEList(counts=counts)
+dge <- calcNormFactors(dge)
+v <- voom(dge,design,plot=TRUE)
+fit <- lmFit(v,design)
+fit <- eBayes(fit)
+log2FC <- fit$coefficients[, 2]
+p.mod <- fit$p.value[, 2]
+q.mod <- qvalue(p.mod)$q
+
+## Volcano plot
+par(font.lab=2, cex.lab=1.2, font.axis=2, cex.axis=1.2)
+rx2 <- c(-1, 1)*1.1*max(abs(log2FC))
+ry2 <- c(-0.1, max(-log10(p.mod)))*1.1
+plot(log2FC, -log10(p.mod), 
+     pch=19, xlim=rx2, ylim=ry2, col=trop[2],
+     xlab=bquote(paste(log[2], " (fold change)")), 
+     ylab=bquote(paste(-log[10], " (p-value)")))
+abline(v=seq(-10,10,1), col="lightgray", lty="dotted")
+abline(h=seq(0,23,1), col="lightgray", lty="dotted")
+points(log2FC, -log10(p.mod), pch=19, col=trop[2])
+title("Volcano plot: TNBC vs. HER2+ in SRP032789 (er level)")
+```
+
+
+
+# Technical reproducibility information
+```{r TRI}
+## Reproducibility info
+proc.time()
+message(Sys.time())
+options(width = 120)
+devtools::session_info()
+```
+
+This document was processed on: `r Sys.Date()`.

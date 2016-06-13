@@ -1,0 +1,464 @@
+---
+title: "recount (gene and exon analyses)"
+author: "Kai Kammers and Shannon Ellis"
+date: "June 09, 2016"
+output: 
+  BiocStyle::html_document
+  pdf_document:
+      toc: true
+---
+
+
+Here is an example of how to download and analyze a `RangedSummarizedExperiment` object with the gene counts with SRA study id [SRP032798](http://trace.ncbi.nlm.nih.gov/Traces/sra/?study=SRP032798).  Here we show how to use `limma` and `topGO`  to perform the differential expression and gene set enrichment analysis.
+
+We first load the required packages.
+
+```{r load-packages, message=FALSE}
+## load libraries
+library(recount)
+library(SummarizedExperiment)
+library(limma)
+library(edgeR)
+library(qvalue)
+library(topGO)
+library(matrixStats)
+library(RSkittleBrewer)
+library(derfinder)
+```
+
+
+
+# Gene level analysis
+```{r download-genes}
+## Find the project of interest (SRP032798), e.g. with parts of the abstract
+project_info <- abstract_search('To define the digital transcriptome of three breast cancer')
+
+## Explore information
+project_info
+
+## Browse the project at SRA
+browse_study(project_info$project)
+
+## Download the gene-level RangedSummarizedExperiment data
+download_study(project_info$project)
+
+## Load the data
+load(file.path(project_info$project, 'rse_gene.Rdata'))
+rse_gene
+
+## This is the phenotype data provided by the recount project
+colData(rse_gene)
+
+## At the gene level, the row data includes the names of the genes and
+## the sum of the reduced exons widths, which can be used for taking into
+## account the gene length.
+rowData(rse_gene)
+```
+
+
+
+Next we perform filtering on both the samples and genes in order to provide a count data set for differential expression analysis.
+```{r filter-genes}
+## Scale counts by taking into account the total coverage per sample
+rse <- scale_counts(rse_gene)
+
+## download additional phenotype data from 
+## http://trace.ncbi.nlm.nih.gov/Traces/study/?acc=SRP032789
+pheno <- read.table('SraRunTable_SRP032789.txt', sep='\t', 
+                    header=TRUE,
+                    stringsAsFactors = FALSE)
+
+## obtain correct order for pheno data
+pheno <- pheno[match(rse$run, pheno$Run_s), ]
+identical(pheno$Run_s, rse$run)
+head(cbind(pheno$Run_s, rse$run))
+
+## obtain grouping information
+colData(rse)$group <- pheno$tumor_type_s
+table(colData(rse)$group)   
+    
+## subset data to HER2 and TNBC types
+rse <- rse[, rse$group %in% c("HER2 Positive Breast Tumor", "TNBC Breast Tumor")]
+rse 
+
+## obtain count matrix
+counts <- assays(rse)$counts
+
+## filter count matrix
+filter <- apply(counts, 1, function(x) mean(x) > 5)
+counts <- counts[filter, ]
+dim(counts)
+counts_genes <- counts
+```
+
+
+```{r exploratory-genes, fig.height=8, fig.width=8}
+## set colors 
+trop <- RSkittleBrewer('tropical')[c(1,2)]
+cols <- as.numeric(as.factor(rse$group))
+
+## Look at mean variance relationship
+plot(rowMeans(log2(counts+1)), rowVars(log2(counts+1)),
+     pch=19, col=trop[2])
+
+## calculate PCs with svd function
+expr.pca <- svd(counts - rowMeans(counts))
+
+## plot PCs
+par(font.lab=2, cex.lab=1.2, font.axis=2, cex.axis=1.2)
+plot(expr.pca$d^2/sum(expr.pca$d^2), pch=19, col=trop[2], cex=1.5,
+     ylab="Fraction of variance explained (gene level)", xlab="PC #",
+     main="PCs")
+
+##plot PC1 vs. PC2
+par(font.lab=2, cex.lab=1.2, font.axis=2, cex.axis=1.2)
+plot(expr.pca$v[, 1], expr.pca$v[, 2], pch=19, col=trop[cols], cex=1.5,
+     xlab="PC1", ylab="PC2",
+     main="PC (gene level)")
+legend("topright", pch=19, col=trop[c(1,2)],
+       names(summary(as.factor(rse$group))))
+```
+
+
+```{r voom-genes, fig.height=8, fig.width=8}
+## Perform differential expression analysis with limma-voom
+design <- model.matrix(~ rse$group)
+design
+
+dge <- DGEList(counts=counts)
+dge <- calcNormFactors(dge)
+v <- voom(dge,design,plot=TRUE)
+fit <- lmFit(v,design)
+fit <- eBayes(fit)
+log2FC <- fit$coefficients[, 2]
+p.mod <- fit$p.value[, 2]
+q.mod <- qvalue(p.mod)$q
+res.genes <- data.frame(log2FC, p.mod, q.mod)
+rownames(res.genes) <- rownames(counts)
+#str(as.character(rse@rowRanges@seqnames))
+sum(res.genes$q.mod<0.05)
+
+
+## Histogram
+par(font.lab=2, cex.lab=1.2, font.axis=2, cex.axis=1.2)
+hist(p.mod, col=trop[2], xlab="p-value",
+     main="Histogramm of p-values", breaks=100)
+
+
+## Volcano plot
+par(font.lab=2, cex.lab=1.2, font.axis=2, cex.axis=1.2)
+rx2 <- c(-1, 1)*1.1*max(abs(log2FC))
+ry2 <- c(-0.1, max(-log10(p.mod)))*1.1
+plot(log2FC, -log10(p.mod), 
+     pch=19, xlim=rx2, ylim=ry2, col=trop[2],
+     xlab=bquote(paste(log[2], " (fold change)")), 
+     ylab=bquote(paste(-log[10], " (p-value)")))
+abline(v=seq(-10,10,1), col="lightgray", lty="dotted")
+abline(h=seq(0,23,1), col="lightgray", lty="dotted")
+points(log2FC, -log10(p.mod), pch=19, col=trop[2])
+title("Volcano plot: TNBC vs. HER2+ in SRP032798 (gene level)")
+```
+
+
+
+# Gene set analysis
+Here we load `topGO`, a gene set analysis library, set the statistical significance measure for each transcript to be the p-value from the differential expression tests between the groups (previous section), and define our gene selection function to select genes with `q < 0.05` -- this is the cutoff at which we will consider genes "interesting" or differentially expressed for this analysis.  
+
+```{r topgo-prep} 
+names(q.mod) <- rownames(counts)
+interesting <- function(x) x < 0.05
+```
+
+Next we make `topGO` objects and run the enrichment tests. We will use the Kolomogorov-Smirnov (`ks`) test for distributional differences: here, we would like to know whether each GO group is "enriched" for differentially expressed (q.mod < 0.05) genes. Equivalently, we are testing whether the p-value distributions are the same for genes in and outside of each gene ontology. We run tests on the "biological processes" ontology. 
+
+```{r bp}
+topgoobjBP <- new('topGOdata', 
+    description='biological process',
+    ontology='BP', allGenes=q.mod, geneSelectionFun=interesting, 
+    annotationFun=annFUN.org, mapping='org.Hs.eg.db', ID='entrez')
+
+bptest <- runTest(topgoobjBP, algorithm='weight01', statistic='ks')
+bptest
+bpres_gene <- GenTable(topgoobjBP, pval=bptest, topNodes=length(bptest@score), numChar=100)
+head(bpres_gene, n=10)                  
+```
+
+
+
+# Exon level analysis
+**In this analysis, we include all exons that map to the previous filtered genes.**
+
+```{r download-exons}
+## Find a project of interest (SRP032798)
+project_info <- abstract_search('To define the digital transcriptome of three breast cancer')
+project_info
+
+## Browse the project at SRA
+browse_study(project_info$project)
+
+## Download the exon-level RangedSummarizedExperiment data
+download_study(project_info$project, type="rse-exon")
+
+## Load the data
+load(file.path(project_info$project, 'rse_exon.Rdata'))
+rse_exon
+
+## This is the sample phenotype data provided by the recount project
+colData(rse_exon)
+```
+
+
+
+```{r exons}
+## Scale counts by taking into account the total coverage per sample
+rse <- scale_counts(rse_exon)
+
+## download pheno data from 
+## http://trace.ncbi.nlm.nih.gov/Traces/study/?acc=SRP032798
+pheno <- read.table('SraRunTable_SRP032789.txt', sep='\t', 
+                    header=TRUE,
+                    stringsAsFactors = FALSE)
+
+## obtain correct order for pheno data
+pheno <- pheno[match(rse$run, pheno$Run_s), ]
+identical(pheno$Run_s, rse$run)
+head(cbind(pheno$Run_s, rse$run))
+
+## obtain grouping information
+colData(rse)$group <- pheno$tumor_type_s
+table(colData(rse)$group)   
+    
+## subset data to HER2 and TNBC types
+rse <- rse[, rse$group %in% c("HER2 Positive Breast Tumor", "TNBC Breast Tumor")]
+rse 
+rse.exon.filt <- rse
+
+## obtain count matrix
+counts <- assays(rse)$counts
+dim(counts)
+
+
+## filter count matrix (keep exons that are in filtered gene counts matrix)
+filter <- rownames(counts) %in% rownames(counts_genes)
+counts <- counts[filter, ]
+dim(counts)
+```
+
+
+```{r exploratory-exons, fig.height=8, fig.width=8}
+## set colors 
+trop <- RSkittleBrewer('tropical')[c(1,2)]
+cols <- as.numeric(as.factor(rse$group))
+
+## Look at mean variance relationship
+plot(rowMeans(log2(counts+1)), rowVars(log2(counts+1)),
+     pch=19, col=trop[2])
+
+## calculate PCs with svd function
+expr.pca <- svd(counts - rowMeans(counts))
+
+## plot PCs
+par(font.lab=2, cex.lab=1.2, font.axis=2, cex.axis=1.2)
+plot(expr.pca$d^2/sum(expr.pca$d^2), pch=19, col=trop[2], cex=1.5,
+     ylab="Fraction of variance explained", xlab="PC #",
+     main="PCs (exon level)")
+
+##plot PC1 vs. PC2
+par(font.lab=2, cex.lab=1.2, font.axis=2, cex.axis=1.2)
+plot(expr.pca$v[, 1], expr.pca$v[, 2], pch=19, col=trop[cols], cex=1.5,
+     xlab="PC1", ylab="PC2",
+     main="PC (exon level)")
+legend("topright", pch=19, col=trop[c(1,2)],
+       names(summary(as.factor(rse$group))))
+```
+
+
+```{r voom-exons, fig.height=8, fig.width=8}
+design <- model.matrix(~ rse$group)
+design
+
+dge <- DGEList(counts=counts)
+dge <- calcNormFactors(dge)
+v <- voom(dge,design,plot=TRUE)
+fit <- lmFit(v,design)
+fit <- eBayes(fit)
+log2FC <- fit$coefficients[, 2]
+p.mod <- fit$p.value[, 2]
+q.mod <- qvalue(p.mod)$q
+res.exons <- data.frame(log2FC, p.mod, q.mod)
+sum(res.exons$q.mod<0.05)
+
+## Volcano plot
+par(font.lab=2, cex.lab=1.2, font.axis=2, cex.axis=1.2)
+rx2 <- c(-1, 1)*1.1*max(abs(log2FC))
+ry2 <- c(-0.1, max(-log10(p.mod)))*1.1
+plot(log2FC, -log10(p.mod), 
+     pch=19, xlim=rx2, ylim=ry2, col=trop[2],
+     xlab=bquote(paste(log[2], " (fold change)")), 
+     ylab=bquote(paste(-log[10], " (p-value)")))
+abline(v=seq(-10,10,1), col="lightgray", lty="dotted")
+abline(h=seq(0,23,1), col="lightgray", lty="dotted")
+points(log2FC, -log10(p.mod), pch=19, col=trop[2])
+title("Volcano plot: TNBC vs. HER2+ in SRP032798 (exon level)")
+```
+
+
+
+```{r, exons-to-genes}
+gene_id <- unique(rownames(counts))
+
+## calculate p-values for gens with Simes' rule
+p_gene <- NULL
+for(i in 1:length(gene_id)){
+        gene_id[i]
+    p_exon <- res.exons$p.mod[rownames(counts) %in% gene_id[i]]
+    p_exon <- sort(p_exon)
+    p_exon_simes <- NULL 
+    for(j in 1:length(p_exon)){
+        p_exon_simes[j] <- length(p_exon) * p_exon[j] / j
+    }
+    p_gene[i] <- min(p_exon_simes)
+}
+
+names(p_gene) <- gene_id
+q_gene <- qvalue(p_gene)$q
+sum(q_gene<0.05)
+
+
+
+## Gene set analysis (p-values of genes derived with Simes' rule from exon p-values)
+interesting <- function(x) x < 0.05
+
+topgoobjBP <- new('topGOdata', 
+    description='biological process',
+    ontology='BP', allGenes=q_gene, geneSelectionFun=interesting, 
+    annotationFun=annFUN.org, mapping='org.Hs.eg.db', ID='entrez')
+
+bptest <- runTest(topgoobjBP, algorithm='weight01', statistic='ks')
+bptest
+bpres_exon <- GenTable(topgoobjBP, pval=bptest, topNodes=length(bptest@score), numChar=100)
+head(bpres_exon, n=10)                  
+```
+
+
+
+# Concordance (genes)
+```{r, con, fig.width=8, fig.height=8}
+## obtain and sort p-values for genes
+p.mod1 <- res.genes$p.mod
+names(p.mod1) <- rownames(res.genes)
+p.mod1.sort <- p.mod1[order(p.mod1)]
+
+
+## obtain dnd sort p-values for genes derived from exons
+p.mod2 <- p_gene
+p.mod2.sort <- p.mod2[order(p.mod2)]
+
+
+## overlap for genes between studies
+table(names(p.mod1.sort) %in% names(p.mod2.sort))
+table(names(p.mod2.sort) %in% names(p.mod1.sort))
+
+conc <- NULL
+for(i in 1:length(p.mod1.sort)){
+    conc[i] <- sum(names(p.mod1.sort)[1:i] %in% names(p.mod2.sort)[1:i])
+}
+
+
+par(mfrow=c(1,1), font.lab=1.5, cex.lab=1.2, font.axis=1.5, cex.axis=1.2)
+plot(seq(1:length(p.mod1.sort)), conc, 
+     type="l", las=0,
+     xlim=c(0,18000),
+     ylim=c(0,18000),
+     xlab='ordered genes',
+     ylab='ordered genes (from exon analysis)',
+     main='Concordance')
+for(k in 1:3){
+    abline(v=k*5000, cex=0.5, col="lightgrey")
+    abline(h=k*5000, cex=0.5, col="lightgrey")
+}
+lines(seq(1:length(p.mod1.sort)), conc, col="black", lwd=2)
+
+
+par(mfrow=c(1,1), font.lab=1.5, cex.lab=1.2, font.axis=1.5, cex.axis=1.2)
+plot(seq(1:length(p.mod1.sort[1:100])), conc[1:100], 
+     type="l",
+     xlim=c(0,100),
+     ylim=c(0,100),
+     xlab='ordered genes',
+     ylab='ordered genes (from exon analysis)',
+     main='Concordance')
+for(k in 1:5){
+    abline(v=k*20, cex=0.5, col="lightgrey")
+    abline(h=k*20, cex=0.5, col="lightgrey")
+}
+lines(seq(1:length(p.mod1.sort[1:100])), conc[1:100], col="black", lwd=2)
+```
+
+
+
+# Concordance (GO groups)
+```{r, con-GO, fig.width=8, fig.height=8}
+## obtain and sort p-values for genes
+p.mod1 <- bpres_gene$GO.ID
+names(p.mod1) <- bpres_gene$GO.ID
+p.mod1.sort <- p.mod1
+
+
+## obtain and sort p-values for genes derived from exons
+p.mod2 <- bpres_exon$GO.ID
+names(p.mod2) <- bpres_exon$GO.ID
+p.mod2.sort <- p.mod2
+
+
+## overlap for genes between studies
+table(names(p.mod1.sort) %in% names(p.mod2.sort))
+table(names(p.mod2.sort) %in% names(p.mod1.sort))
+
+conc <- NULL
+for(i in 1:length(p.mod1.sort)){
+    conc[i] <- sum(names(p.mod1.sort)[1:i] %in% names(p.mod2.sort)[1:i])
+}
+
+
+par(mfrow=c(1,1), font.lab=1.5, cex.lab=1.2, font.axis=1.5, cex.axis=1.2)
+plot(seq(1:length(p.mod1.sort)), conc, 
+     type="l", las=0,
+     xlim=c(0,18000),
+     ylim=c(0,18000),
+     xlab='ordered GO groups',
+     ylab='ordered GO groups (from exon analysis)',
+     main='Concordance')
+for(k in 1:3){
+    abline(v=k*5000, cex=0.5, col="lightgrey")
+    abline(h=k*5000, cex=0.5, col="lightgrey")
+}
+lines(seq(1:length(p.mod1.sort)), conc, col="black", lwd=2)
+
+
+par(mfrow=c(1,1), font.lab=1.5, cex.lab=1.2, font.axis=1.5, cex.axis=1.2)
+plot(seq(1:length(p.mod1.sort[1:100])), conc[1:100], 
+     type="l",
+     xlim=c(0,100),
+     ylim=c(0,100),
+     xlab='ordered GO groups',
+     ylab='ordered GO groups (from exon analysis)',
+     main='Concordance')
+for(k in 1:5){
+    abline(v=k*20, cex=0.5, col="lightgrey")
+    abline(h=k*20, cex=0.5, col="lightgrey")
+}
+lines(seq(1:length(p.mod1.sort[1:100])), conc[1:100], col="black", lwd=2)
+```
+
+
+# Technical reproducibility information
+```{r TRI}
+## Reproducibility info
+proc.time()
+message(Sys.time())
+options(width = 120)
+devtools::session_info()
+```
+
+This document was processed on: `r Sys.Date()`.
