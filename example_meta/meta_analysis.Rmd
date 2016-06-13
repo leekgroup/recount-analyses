@@ -1,44 +1,83 @@
 ---
-title: "Recount Meta-Analysis"
-author: "Jeff Leek and Margaret Taub"
-date: "June 7, 2016"
-output: 
-  BiocStyle::html_document
+title: 'Recount Meta-Analysis'
+author: 'Jeff Leek and Margaret Taub'
+date: 'June 7, 2016'
+output:
+  BiocStyle::html_document:
+    toc: true
   pdf_document:
-      toc: true
+    toc: true
 ---
 
+```{r 'setup', echo = FALSE, warning = FALSE, message = FALSE}
+timestart <- Sys.time()
 
-## Set the working directory
+## Bib setup
+library('knitcitations')
+
+## Load knitcitations with a clean bibliography
+cleanbib()
+cite_options(hyperlink = 'to.doc', citation_format = 'text', style = 'html')
+
+## Write bibliography information
+bibs <- c(
+    BiocStyle = citation('BiocStyle'),
+    derfinder = citation('derfinder')[1],
+    devtools = citation('devtools'),
+    dplyr = citation('dplyr'),
+    edgeR = citation('edgeR')[1],
+    ffpe = citation('ffpe'),
+    knitcitations = citation('knitcitations'),
+    magrittr = citation('magrittr'),
+    R = citation(),
+    recount = citation('recount'),
+    rmarkdown = citation('rmarkdown'),
+    RSkittleBrewer = citation('RSkittleBrewer'),
+    SummarizedExperiment = citation('SummarizedExperiment'),
+    voom = RefManageR::BibEntry('article', key = 'voom', author = 'CW Law and Y Chen and W Shi and GK Smyth', year = '2014', title = 'Voom: precision weights unlock linear model analysis tools for RNA-seq read counts', journal = 'Genome Biology', volume = '15', pages = 'R29')
+)
+
+write.bibtex(bibs,
+    file = 'meta_analysis.bib')
+bib <- read.bibtex('meta_analysis.bib')
+
+## Assign short names
+names(bib) <- names(bibs)
+```
+
+# Analysis
 
 ## Load libraries we will need
 
-```{r loadpackages}
-library(dplyr)
-library(recount)
-library(magrittr)
-library(limma)
-library(edgeR)
-library(ffpe)
-library(recount)
-library(RSkittleBrewer)
-library(SummarizedExperiment)
-library(devtools)
-trop = RSkittleBrewer::RSkittleBrewer("tropical")
+```{r loadpackages, message = FALSE, warning = FALSE}
+library('dplyr')
+library('recount')
+library('magrittr')
+library('limma')
+library('edgeR')
+library('ffpe')
+library('RSkittleBrewer')
+library('SummarizedExperiment')
+library('devtools')
+trop = RSkittleBrewer::RSkittleBrewer('tropical')
 ```
 
 ## Get data sets
 
-We identify two projects consisting of samples from colon `SRP029880`,`SRP042228` and three that contain samples from blood `SRP059039`, `SRP059172`, `SRP062966`. 
+We identify two projects consisting of samples from colon `SRP029880`, `SRP042228` and three that contain samples from blood `SRP059039`, `SRP059172`, `SRP062966`. 
 
 ```{r selectprojects}
-colon_proj = c('SRP029880','SRP042228')
-sapply(colon_proj,download_study)
+colon_proj <- c('SRP029880', 'SRP042228')
+if(any(!file.exists(file.path(colon_proj, 'rse_gene.Rdata')))) {
+    sapply(colon_proj, download_study)
+}
 
-blood_proj = c('SRP059039', 'SRP059172', 'SRP062966')
-sapply(blood_proj,download_study)
+blood_proj <- c('SRP059039', 'SRP059172', 'SRP062966')
+if(any(!file.exists(file.path(blood_proj, 'rse_gene.Rdata')))) {
+    sapply(blood_proj, download_study)
+}
 
-proj = c(colon_proj,blood_proj)
+proj <- c(colon_proj,blood_proj)
 ```
 
 ## Load the data
@@ -46,12 +85,12 @@ proj = c(colon_proj,blood_proj)
 Now we load these data sets into R and calculate the number of genes and samples for each data set
 
 ```{r loaddata}
-dat = lapply(proj, function(x) { 
+dat <- lapply(proj, function(x) { 
     load(file.path(x, 'rse_gene.Rdata'))
     return(rse_gene)
 })
 proj
-sapply(dat,dim)
+sapply(dat, dim)
 ```
 
 
@@ -60,46 +99,49 @@ sapply(dat,dim)
 Now we load the metadata from the SRA samples
 
 ```{r loadmeta}
-metadata = all_metadata("sra")
+metadata <- all_metadata('sra')
 ```
 
 ## Get additional geo data for these samples
 
 Now we go through and collect geo information for the samples. We label them with their respective tissue and identify which samples are supposed to be normal. 
 
-```{r getgeoinfo}
-
-charvec = vector("list",5)
-
-for(i in 1:5){
-  index = match(colData(dat[[i]])$run,metadata$run)
-  colData(dat[[i]])$geo = metadata$geo_accession[index]
-  info = sapply(colData(dat[[i]])$geo,geo_info)
-  charvec[[i]] = sapply(info,geo_characteristics)
-  cat(i)
+```{r getgeoinfo, warning = FALSE}
+if(!file.exists('charvec.Rdata')) {
+    charvec <- vector('list', 5)
+    dir.create('geoinfo', showWarnings = FALSE)
+    for(i in 1:5){
+      index <- match(colData(dat[[i]])$run, metadata$run)
+      colData(dat[[i]])$geo <- metadata$geo_accession[index]
+      info <- sapply(colData(dat[[i]])$geo, geo_info, destdir = 'geoinfo')
+      charvec[[i]] <- sapply(info, geo_characteristics)
+    }
+    save(charvec, file = 'charvec.Rdata')
+} else {
+    load('charvec.Rdata')
 }
 
-## first data set - normals called "normal-looking surrounding colonic epithelium"
-colData(dat[[1]])$normal = grepl("normal",unlist(charvec[1])[(1:54)*2-1])
-colData(dat[[1]])$tissue = "colon"
+## first data set - normals called 'normal-looking surrounding colonic epithelium'
+colData(dat[[1]])$normal <- grepl('normal', unlist(charvec[1])[(1:54) * 2 - 1])
+colData(dat[[1]])$tissue <- 'colon'
 
 ## second data set - normals called 
-colData(dat[[2]])$normal = grepl("not ibd",tolower(unlist(charvec[[2]][5,])))
-colData(dat[[2]])$tissue = "colon"
+colData(dat[[2]])$normal <- grepl('not ibd', tolower(unlist(charvec[[2]][5, ])))
+colData(dat[[2]])$tissue <- 'colon'
 
 ## third data set  - normals called Control
-colData(dat[[3]])$normal = grepl("Control",unlist(charvec[[3]][2,]))
-colData(dat[[3]])$tissue = "blood"
+colData(dat[[3]])$normal <- grepl('Control', unlist(charvec[[3]][2, ]))
+colData(dat[[3]])$tissue <- 'blood'
 
 ## fourth data set  - normals called Control
 
-colData(dat[[4]])$normal = grepl("Control",unlist(charvec[[4]][1,]))
-colData(dat[[4]])$tissue = "blood"
+colData(dat[[4]])$normal <- grepl('Control', unlist(charvec[[4]][1, ]))
+colData(dat[[4]])$tissue <- 'blood'
 
 ## fifth data set - normals called healthy
 
-colData(dat[[5]])$normal = grepl("healthy",unlist(charvec[[5]][1,]))
-colData(dat[[5]])$tissue = "blood"
+colData(dat[[5]])$normal <- grepl('healthy', unlist(charvec[[5]][1, ]))
+colData(dat[[5]])$tissue <- 'blood'
 
 ```
 
@@ -109,7 +151,7 @@ colData(dat[[5]])$tissue = "blood"
 Now we merge the data sets into one ranged summarized experiment
 
 ```{r mergedata}
-mdat = do.call(cbind,dat)
+mdat <- do.call(cbind, dat)
 ```
 
 
@@ -118,8 +160,8 @@ mdat = do.call(cbind,dat)
 Find out how many samples are normal in each study and subset to just the normal samples for further analysis. 
 
 ```{r selectnormals}
-table(colData(mdat)$normal,colData(mdat)$project)
-ndat = mdat[,colData(mdat)$normal]
+table(colData(mdat)$normal, colData(mdat)$project)
+ndat <- mdat[, colData(mdat)$normal]
 ```
 
 
@@ -129,16 +171,16 @@ ndat = mdat[,colData(mdat)$normal]
 Here we do a differential expression analysis comparing blood to colon. We consider only the
 genes that have an average normalized count of at least 5 across the data set. 
 
-```{r}
-ndat <-scale_counts(ndat)
-ndat_counts<-assays(ndat)[[1]]
-keep = rowMeans(ndat_counts) > 5
+```{r 'bloodvscolon'}
+ndat <- scale_counts(ndat)
+ndat_counts <- assays(ndat)[[1]]
+keep <- rowMeans(ndat_counts) > 5
 ndat_counts = ndat_counts[keep, ]
 design <- model.matrix(~colData(ndat)$tissue)
-dge <- DGEList(counts=ndat_counts)
+dge <- DGEList(counts = ndat_counts)
 dge <- calcNormFactors(dge)
-v <- voom(dge,design,plot=TRUE)
-fit <- lmFit(v,design)
+v <- voom(dge, design, plot=TRUE)
+fit <- lmFit(v, design)
 fit <- eBayes(fit)
 topTable(fit)
 ```
@@ -149,30 +191,35 @@ topTable(fit)
 Now we do the GTEX analysis comparing blood to colon. 
 
 ```{r gtexanalysis}
-## load gtex data - replace!!
-load("rse_gene.Rdata")
+## Download the GTEx data
+if(!file.exists(file.path('SRP012682', 'rse_gene.Rdata'))) {
+    download_study('SRP012682')
+}
+load(file.path('SRP012682', 'rse_gene.Rdata'))
 
-gtex_metadata = all_metadata("gtex")
+gtex_metadata <- all_metadata('gtex')
 
-gtex_blood = rse_gene[,subset(gtex_metadata, smtsd=="Whole Blood")$run]
-colData(gtex_blood)$tissue = "wholeblood"
-gtex_colon = rse_gene[,subset(gtex_metadata, smts=="Colon")$run]
-colData(gtex_colon)$tissue = "colon"
+gtex_blood <- rse_gene[, subset(gtex_metadata, smtsd == 'Whole Blood')$run]
+colData(gtex_blood)$tissue <- 'wholeblood'
+gtex_colon <- rse_gene[, subset(gtex_metadata, smts == 'Colon')$run]
+colData(gtex_colon)$tissue <- 'colon'
 
-gtex_both = do.call(cbind, list(gtex_blood, gtex_colon))
-colData(gtex_both)$batch = gtex_metadata[match(colData(gtex_both)$run, gtex_metadata$run), "smgebtch"]
+gtex_both <- do.call(cbind, list(gtex_blood, gtex_colon))
+colData(gtex_both)$batch <- gtex_metadata[match(colData(gtex_both)$run,
+    gtex_metadata$run), 'smgebtch']
 
-gtex_both = scale_counts(gtex_both)
-gtex_both_counts = assays(gtex_both)[[1]]
-gtex_both_counts = gtex_both_counts[keep,]
+gtex_both <- scale_counts(gtex_both)
+gtex_both_counts <- assays(gtex_both)[[1]]
+gtex_both_counts <- gtex_both_counts[keep, ]
 
-design_gtex = model.matrix(~colData(gtex_both)$tissue + colData(gtex_both)$batch)
-dge_gtex = DGEList(counts=gtex_both_counts)
-dge_gtex = calcNormFactors(dge_gtex)
-v_gtex <- voom(dge_gtex,design_gtex,plot=TRUE)
-fit_gtex <- lmFit(v_gtex,design_gtex)
+design_gtex <- model.matrix(~colData(gtex_both)$tissue +
+    colData(gtex_both)$batch)
+dge_gtex <- DGEList(counts = gtex_both_counts)
+dge_gtex <- calcNormFactors(dge_gtex)
+v_gtex <- voom(dge_gtex, design_gtex, plot=TRUE)
+fit_gtex <- lmFit(v_gtex, design_gtex)
 fit_gtex <- eBayes(fit_gtex)
-topTable(fit_gtex,coef=2)
+topTable(fit_gtex, coef = 2)
 ```
 
 
@@ -182,23 +229,28 @@ Now we do the GTEX analysis comparing blood to lung
 
 
 ```{r gtexanalysislung}
-gtex_lung = rse_gene[,subset(gtex_metadata, smts=="Lung")$run]
-colData(gtex_lung)$tissue = "lung"
+gtex_lung <- rse_gene[, subset(gtex_metadata, smts=='Lung')$run]
+colData(gtex_lung)$tissue <- 'lung'
 
-gtex_both_lung = do.call(cbind, list(gtex_blood, gtex_lung))
-colData(gtex_both_lung)$batch = gtex_metadata[match(colData(gtex_both_lung)$run, gtex_metadata$run), "smgebtch"]
+gtex_both_lung <- do.call(cbind, list(gtex_blood, gtex_lung))
+colData(gtex_both_lung)$batch <- gtex_metadata[
+    match(
+        colData(gtex_both_lung)$run,
+        gtex_metadata$run
+    ), 'smgebtch']
 
-gtex_both_lung = scale_counts(gtex_both_lung)
-gtex_both_lung_counts = assays(gtex_both_lung)[[1]]
-gtex_both_lung_counts = gtex_both_lung_counts[keep,]
+gtex_both_lung <- scale_counts(gtex_both_lung)
+gtex_both_lung_counts <- assays(gtex_both_lung)[[1]]
+gtex_both_lung_counts <- gtex_both_lung_counts[keep,]
 
-design_gtex_lung = model.matrix(~colData(gtex_both_lung)$tissue + colData(gtex_both_lung)$batch)
-dge_gtex_lung = DGEList(counts=gtex_both_lung_counts)
-dge_gtex_lung = calcNormFactors(dge_gtex_lung)
-v_gtex_lung <- voom(dge_gtex_lung,design_gtex_lung,plot=TRUE)
-fit_gtex_lung <- lmFit(v_gtex_lung,design_gtex_lung)
+design_gtex_lung <- model.matrix(~colData(gtex_both_lung)$tissue +
+    colData(gtex_both_lung)$batch)
+dge_gtex_lung <- DGEList(counts = gtex_both_lung_counts)
+dge_gtex_lung <- calcNormFactors(dge_gtex_lung)
+v_gtex_lung <- voom(dge_gtex_lung, design_gtex_lung, plot = TRUE)
+fit_gtex_lung <- lmFit(v_gtex_lung, design_gtex_lung)
 fit_gtex_lung <- eBayes(fit_gtex_lung)
-topTable(fit_gtex_lung,coef=2)
+topTable(fit_gtex_lung, coef = 2)
 ```
 
 
@@ -207,30 +259,61 @@ topTable(fit_gtex_lung,coef=2)
 Make CAT plots and compare different analyses. 
 
 ```{r catplots}
-cat_sra_gtex = CATplot(
-    -rank(fit$coefficients[,2]),
-    -rank(-fit_gtex$coefficients[,2]), maxrank=1000, ylim=c(0,1))
+cat_sra_gtex <- CATplot(
+    -rank(fit$coefficients[, 2]),
+    -rank(-fit_gtex$coefficients[, 2]), maxrank = 1000, ylim = c(0,1))
 cat_sra_gtex_lung = CATplot(
-    -rank(fit$coefficients[,2]),
-    -rank(-fit_gtex_lung$coefficients[,2]), maxrank=1000, ylim=c(0,1))
+    -rank(fit$coefficients[, 2]),
+    -rank(-fit_gtex_lung$coefficients[, 2]), maxrank = 1000, ylim = c(0,1))
 cat_sra_gtex_batch = CATplot(
-    -rank(fit$coefficients[,2]),
-    -rank(-fit_gtex_lung$coefficients[,3]), maxrank=1000, ylim=c(0,1))
+    -rank(fit$coefficients[, 2]),
+    -rank(-fit_gtex_lung$coefficients[, 3]), maxrank = 1000, ylim = c(0,1))
 
-plot(cat_sra_gtex,type="l",col=trop[1],lwd=3)
-lines(cat_sra_gtex_lung,type="l",col=trop[2],lwd=3)
-lines(cat_sra_gtex_batch,type="l",col=trop[3],lwd=3)
-legend(0,0.5,legend=c("Same Tisue","Different Tissues","Tissue vs. Batch"),col=trop[1:3],lwd=3)
+plot(cat_sra_gtex, type = 'l', col = trop[1], lwd = 3)
+lines(cat_sra_gtex_lung, type = 'l', col = trop[2], lwd = 3)
+lines(cat_sra_gtex_batch, type = 'l', col = trop[3], lwd = 3)
+legend(0, 0.5, legend=c('Same Tisue', 'Different Tissues', 
+    'Tissue vs. Batch'), col = trop[1:3], lwd = 3)
 ```
 
 
-## Session Info
+# Reproducibility
 
-```{r sessioninfo}
-## Reproducibility info
-proc.time()
+This analysis report was made possible thanks to:
+
+* R `r citep(bib[['R']])`
+* `r Biocpkg('BiocStyle')` `r citep(bib[['BiocStyle']])`
+* `r Biocpkg('derfinder')` `r citep(bib[['derfinder']])`
+* `r CRANpkg('devtools')` `r citep(bib[['devtools']])`
+* `r CRANpkg('dplyr')` `r citep(bib[['dplyr']])`
+* `r Biocpkg('edgeR')` `r citep(bib[['edgeR']])`
+* `r Biocpkg('ffpe')` `r citep(bib[['ffpe']])`
+* `r CRANpkg('knitcitations')` `r citep(bib[['knitcitations']])`
+* `r CRANpkg('magrittr')` `r citep(bib[['magrittr']])`
+* `r Githubpkg('leekgroup/recount')` `r citep(bib[['recount']])`
+* `r CRANpkg('rmarkdown')` `r citep(bib[['rmarkdown']])`
+* `r Githubpkg('alyssafrazee/RSkittleBrewer')` `r citep(bib[['RSkittleBrewer']])`
+* `r Biocpkg('SummarizedExperiment')` `r citep(bib[['SummarizedExperiment']])`
+* `r Biocpkg('limma')` `r citep(bib[['voom']])`
+
+[Bibliography file](meta_analysis.bib)
+
+```{r bibliography, results='asis', echo=FALSE, warning = FALSE}
+## Print bibliography
+bibliography()
+```
+
+
+```{r reproducibility}
+## Time spent creating this report:
+diff(c(timestart, Sys.time()))
+
+## Date this report was generated
 message(Sys.time())
+
+## Reproducibility info
 options(width = 120)
 devtools::session_info()
 ```
+
 

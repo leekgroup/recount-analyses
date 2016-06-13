@@ -1,0 +1,3 @@
+## Some files from using render(clean = FALSE)
+*/*.knit.md
+*/*.utf8.md
