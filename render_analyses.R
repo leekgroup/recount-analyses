@@ -4,7 +4,7 @@ source("https://bioconductor.org/biocLite.R")
 useDevel(TRUE) ## recount requires the devel version of rtracklayer (>= 1.33.3)
 
 ## Bioconductor or CRAN packages
-biocLite(c('BiocParallel', 'BiocStyle', 'derfinder', 'devtools', 'dplyr', 'edgeR', 'ffpe', 'GenomicRanges', 'IHW', 'knitcitations', 'limma', 'magrittr', 'matrixStats', 'qvalue', 'rmarkdown', 'SummarizedExperiment', 'topGO'))
+biocLite(c('ballgown', 'BiocParallel', 'BiocStyle', 'coop', 'derfinder', 'devtools', 'dplyr', 'edgeR', 'ffpe', 'GenomicRanges', 'IHW', 'knitcitations', 'limma', 'magrittr', 'matrixStats', 'org.Hs.eg.db', 'qvalue', 'rmarkdown', 'stringr', 'SummarizedExperiment', 'topGO'))
 
 ## GitHub packages
 devtools::install_github('leekgroup/recount')

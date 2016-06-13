@@ -28,8 +28,10 @@ cite_options(hyperlink = 'to.doc', citation_format = 'text', style = 'html')
 
 ## Write bibliography information
 bibs <- c(
+    ballgown = citation('ballgown'),
     BiocParallel = citation('BiocParallel'),
     BiocStyle = citation('BiocStyle'),
+    coop = citation('coop'),
     derfinder = citation('derfinder')[1],
     devtools = citation('devtools'),
     dplyr = citation('dplyr'),
@@ -39,11 +41,13 @@ bibs <- c(
     knitcitations = citation('knitcitations'),
     magrittr = citation('magrittr'),
     matrixStats = citation('matrixStats'),
+    org.Hs.eg.db = citation('org.Hs.eg.db'),
     qvalue = citation('qvalue'),
     R = citation(),
     recount = citation('recount'),
     rmarkdown = citation('rmarkdown'),
     RSkittleBrewer = citation('RSkittleBrewer'),
+    stringr = citation('stringr'),
     SummarizedExperiment = citation('SummarizedExperiment'),
     topGO = citation('topGO'),
     voom = RefManageR::BibEntry('article', key = 'voom', author = 'CW Law and Y Chen and W Shi and GK Smyth', year = '2014', title = 'Voom: precision weights unlock linear model analysis tools for RNA-seq read counts', journal = 'Genome Biology', volume = '15', pages = 'R29')
@@ -59,8 +63,10 @@ names(bib) <- names(bibs)
 The analyses were made possible thanks to:
 
 * R `r citep(bib[['R']])`
+* `r Biocpkg('ballgown')` `r citep(bib[['ballgown']])`
 * `r Biocpkg('BiocParallel')` `r citep(bib[['BiocParallel']])`
 * `r Biocpkg('BiocStyle')` `r citep(bib[['BiocStyle']])`
+* `r CRANpkg('coop')` `r citep(bib[['coop']])`
 * `r Biocpkg('derfinder')` `r citep(bib[['derfinder']])`
 * `r CRANpkg('devtools')` `r citep(bib[['devtools']])`
 * `r CRANpkg('dplyr')` `r citep(bib[['dplyr']])`
@@ -70,10 +76,12 @@ The analyses were made possible thanks to:
 * `r CRANpkg('knitcitations')` `r citep(bib[['knitcitations']])`
 * `r CRANpkg('magrittr')` `r citep(bib[['magrittr']])`
 * `r CRANpkg('matrixStats')` `r citep(bib[['matrixStats']])`
+* `r Biocpkg('org.Hs.eg.db')` `r citep(bib[['org.Hs.eg.db']])`
 * `r Biocpkg('qvalue')` `r citep(bib[['qvalue']])`
 * `r Githubpkg('leekgroup/recount')` `r citep(bib[['recount']])`
 * `r CRANpkg('rmarkdown')` `r citep(bib[['rmarkdown']])`
 * `r Githubpkg('alyssafrazee/RSkittleBrewer')` `r citep(bib[['RSkittleBrewer']])`
+* `r CRANpkg('stringr')` `r citep(bib[['stringr']])`
 * `r Biocpkg('SummarizedExperiment')` `r citep(bib[['SummarizedExperiment']])`
 * `r Biocpkg('topGO')` `r citep(bib[['topGO']])`
 * `r Biocpkg('limma')` `r citep(bib[['voom']])`
