@@ -1,1 +1,1 @@
-Supplementary website for [recount](jhubiostatistics.shinyapps.io/recount/) with the code and results for the example analyses using this resource.
+Supplementary website for [recount](https://jhubiostatistics.shinyapps.io/recount/) with the code and results for the example analyses using this resource.
