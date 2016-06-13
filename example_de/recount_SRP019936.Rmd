@@ -1,30 +1,67 @@
 ---
-title: "recount (overlay two studies)"
-author: "Kai Kammers and Shannon Ellis"
-date: "June 09, 2016"
-output: 
-  BiocStyle::html_document
+title: 'recount (overlay two studies)'
+author: 'Kai Kammers and Shannon Ellis'
+date: 'June 09, 2016'
+output:
+  BiocStyle::html_document:
+    toc: true
   pdf_document:
-      toc: true
+    toc: true
 ---
 
-Here we label inthe following way:
+```{r 'setup', echo = FALSE, warning = FALSE, message = FALSE}
+timestart <- Sys.time()
+
+## Bib setup
+library('knitcitations')
+
+## Load knitcitations with a clean bibliography
+cleanbib()
+cite_options(hyperlink = 'to.doc', citation_format = 'text', style = 'html')
+
+## Write bibliography information
+bibs <- c(
+    BiocStyle = citation('BiocStyle'),
+    derfinder = citation('derfinder')[1],
+    devtools = citation('devtools'),
+    edgeR = citation('edgeR')[1],
+    IHW = citation('IHW'),
+    knitcitations = citation('knitcitations'),
+    matrixStats = citation('matrixStats'),
+    qvalue = citation('qvalue'),
+    R = citation(),
+    recount = citation('recount'),
+    rmarkdown = citation('rmarkdown'),
+    RSkittleBrewer = citation('RSkittleBrewer'),
+    SummarizedExperiment = citation('SummarizedExperiment'),
+    voom = RefManageR::BibEntry('article', key = 'voom', author = 'CW Law and Y Chen and W Shi and GK Smyth', year = '2014', title = 'Voom: precision weights unlock linear model analysis tools for RNA-seq read counts', journal = 'Genome Biology', volume = '15', pages = 'R29')
+)
+
+write.bibtex(bibs,
+    file = 'recount_SRP019936.bib')
+bib <- read.bibtex('recount_SRP019936.bib')
+
+## Assign short names
+names(bib) <- names(bibs)
+```
+
+Here we label in the following way:
 
 -   study1 = SRP019936 (that is the 'new' study)
--   study2 = SRP032798 (this is the study that we used for gene, exon, and expressed region analyses)
+-   study2 = SRP032789 (this is the study that we used for gene, exon, and expressed region analyses)
 
 
 # Load R-packages
-```{r load-packages, message=FALSE}
+```{r load-packages, message = FALSE, warning = FALSE}
 ## load libraries
-library(recount)
-library(SummarizedExperiment)
-library(limma)
-library(edgeR)
-library(qvalue)
-library(matrixStats)
-library(RSkittleBrewer)
-library(IHW)
+library('recount')
+library('SummarizedExperiment')
+library('limma')
+library('edgeR')
+library('qvalue')
+library('matrixStats')
+library('RSkittleBrewer')
+library('IHW')
 ```
 
 
@@ -36,7 +73,10 @@ project_info1 <- abstract_search('model for HER2 positive breast tumors')
 project_info1
 
 ## Download the gene-level RangedSummarizedExperiment data
-download_study(project_info1$project)
+if(!file.exists(file.path('SRP019936', 'rse_gene.Rdata'))) {
+    download_study(project_info1$project)
+}
+
 
 ## Load the data
 load(file.path(project_info1$project, 'rse_gene.Rdata'))
@@ -59,9 +99,10 @@ rse1 <- scale_counts(rse_gene1)
 
 ## download pheno data from 
 ## http://trace.ncbi.nlm.nih.gov/Traces/study/?acc=SRP019936
-pheno1 <- read.table('SraRunTable_SRP019936.txt', sep='\t', 
-                    header=TRUE,
-                    stringsAsFactors = FALSE)
+pheno1 <- read.table('SraRunTable_SRP019936.txt', sep = '\t', 
+    header=TRUE,
+    stringsAsFactors = FALSE)
+
 ## obtain correct order for pheno data
 pheno1 <- pheno1[match(rse1$run, pheno1$Run_s), ]
 identical(pheno1$Run_s, rse1$run)
@@ -72,7 +113,7 @@ colData(rse1)$group <- pheno1$tissue_s
 table(colData(rse1)$group)   
       
 ## subset data to HER2 and TNBC types
-rse1 <- rse1[, rse1$group %in% c("HER2+ Breast Tumor", "Triple Negative Breast Tumor")]
+rse1 <- rse1[, rse1$group %in% c('HER2+ Breast Tumor', 'Triple Negative Breast Tumor')]
 rse1
 
 ## obtain count matrix
@@ -85,30 +126,30 @@ dim(counts1)
 ```
 
 
-```{r exploratory-genes, fig.height=8, fig.width=8}
+```{r exploratory-genes, fig.height = 8, fig.width = 8}
 ## set colors 
-trop <- RSkittleBrewer('tropical')[c(1,2)]
+trop <- RSkittleBrewer('tropical')[c(1, 2)]
 cols <- as.numeric(as.factor(rse1$group))
 
 ## Look at mean variance relationship
-plot(rowMeans(log2(counts1 + 1)), rowVars(log2(counts1+1)),
-     pch=19, col=trop[2])
+plot(rowMeans(log2(counts1 + 1)), rowVars(log2(counts1 + 1)),
+     pch = 19, col = trop[2])
 
 ## calculate PCs with svd function
 expr.pca <- svd(counts1 - rowMeans(counts1))
 
 ## plot PCs
-par(font.lab=2, cex.lab=1.2, font.axis=2, cex.axis=1.2)
-plot(expr.pca$d^2/sum(expr.pca$d^2), pch=19, col=trop[2], cex=1.5,
-     ylab="Percent of variance explained (gene level)", xlab="PC #",
-     main="PCs")
+par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
+plot(expr.pca$d^2/sum(expr.pca$d^2), pch = 19, col = trop[2], cex = 1.5,
+     ylab = 'Percent of variance explained (gene level)', xlab = 'PC #',
+     main = 'PCs')
 
 ##plot PC1 vs. PC2
-par(font.lab=2, cex.lab=1.2, font.axis=2, cex.axis=1.2)
-plot(expr.pca$v[, 1], expr.pca$v[, 2], pch=19, col=trop[cols], cex=1.5,
-     xlab="PC1", ylab="PC2",
-     main="PC (gene level)")
-legend("topright", pch=19, col=trop[c(1,2)],
+par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
+plot(expr.pca$v[, 1], expr.pca$v[, 2], pch = 19, col = trop[cols], cex = 1.5,
+     xlab = 'PC1', ylab = 'PC2',
+     main = 'PC (gene level)')
+legend('topright', pch = 19, col = trop[c(1, 2)],
        names(summary(as.factor(rse1$group))))
 ```
 
@@ -118,9 +159,10 @@ rse1 <- scale_counts(rse_gene1)
 
 ## download pheno data from 
 ## http://trace.ncbi.nlm.nih.gov/Traces/study/?acc=SRP019936
-pheno1 <- read.table('SraRunTable_SRP019936.txt', sep='\t', 
-                    header=TRUE,
-                    stringsAsFactors = FALSE)
+pheno1 <- read.table('SraRunTable_SRP019936.txt', sep = '\t', 
+    header=TRUE,
+    stringsAsFactors = FALSE)
+
 ## obtain correct order for pheno data
 pheno1 <- pheno1[match(rse1$run, pheno1$Run_s), ]
 identical(pheno1$Run_s, rse1$run)
@@ -131,7 +173,7 @@ colData(rse1)$group <- pheno1$tissue_s
 table(colData(rse1)$group)   
       
 ## subset data to HER2 and TNBC types
-rse1 <- rse1[, rse1$group %in% c("HER2+ Breast Tumor", "Triple Negative Breast Tumor")]
+rse1 <- rse1[, rse1$group %in% c('HER2+ Breast Tumor', 'Triple Negative Breast Tumor')]
 rse1
 
 rse1 <- rse1[, -15]
@@ -146,45 +188,45 @@ dim(counts1)
 ```
 
 
-```{r exploratory-genes-2, fig.height=8, fig.width=8}
+```{r exploratory-genes-2, fig.height = 8, fig.width = 8}
 ## set colors 
-trop <- RSkittleBrewer('tropical')[c(1,2)]
+trop <- RSkittleBrewer('tropical')[c(1, 2)]
 cols <- as.numeric(as.factor(rse1$group))
 
 ## Look at mean variance relationship
-plot(rowMeans(log2(counts1 + 1)), rowVars(log2(counts1+1)),
-     pch=19, col=trop[2])
+plot(rowMeans(log2(counts1 + 1)), rowVars(log2(counts1 + 1)),
+     pch = 19, col = trop[2])
 
 ## calculate PCs with svd function
 expr.pca <- svd(counts1 - rowMeans(counts1))
 
 ## plot PCs
-par(font.lab=2, cex.lab=1.2, font.axis=2, cex.axis=1.2)
-plot(expr.pca$d^2/sum(expr.pca$d^2), pch=19, col=trop[2], cex=1.5,
-     ylab="Percent of variance explained (gene level)", xlab="PC #",
-     main="PCs")
+par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
+plot(expr.pca$d^2/sum(expr.pca$d^2), pch = 19, col = trop[2], cex = 1.5,
+     ylab = 'Percent of variance explained (gene level)', xlab = 'PC #',
+     main = 'PCs')
 
 ##plot PC1 vs. PC2
-par(font.lab=2, cex.lab=1.2, font.axis=2, cex.axis=1.2)
-plot(expr.pca$v[, 1], expr.pca$v[, 2], pch=19, col=trop[cols], cex=1.5,
-     xlab="PC1", ylab="PC2",
-     main="PC (gene level)")
-legend("topright", pch=19, col=trop[c(1,2)],
+par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
+plot(expr.pca$v[, 1], expr.pca$v[, 2], pch = 19, col = trop[cols], cex = 1.5,
+     xlab = 'PC1', ylab = 'PC2',
+     main = 'PC (gene level)')
+legend('topright', pch = 19, col = trop[c(1, 2)],
        names(summary(as.factor(rse1$group))))
 ```
 
 
 
 
-```{r voom-study1-2, fig.height=8, fig.width=8}
+```{r voom-study1-2, fig.height = 8, fig.width = 8}
 ## Perform differential expression analysis with limma-voom
 design <- model.matrix(~ rse1$group)
 design
 
-dge <- DGEList(counts=counts1)
+dge <- DGEList(counts = counts1)
 dge <- calcNormFactors(dge)
-v <- voom(dge,design,plot=TRUE)
-fit <- lmFit(v,design)
+v <- voom(dge, design,plot = TRUE)
+fit <- lmFit(v, design)
 fit <- eBayes(fit)
 log2FC1 <- fit$coefficients[, 2]
 t.mod1 <- fit$t[, 2]
@@ -192,34 +234,37 @@ p.mod1 <- fit$p.value[, 2]
 q.mod1 <- qvalue(p.mod1)$q
 
 ## Histogram
-par(font.lab=2, cex.lab=1.2, font.axis=2, cex.axis=1.2)
-hist(p.mod1, col=trop[2], xlab="p-value",
-     main="Histogramm of p-values", breaks=100)
+par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
+hist(p.mod1, col = trop[2], xlab = 'p-value',
+     main = 'Histogramm of p-values', breaks = 100)
 
 
 ## Volcano plot
-par(font.lab=2, cex.lab=1.2, font.axis=2, cex.axis=1.2)
-rx2 <- c(-1, 1)*1.1*max(abs(log2FC1))
-ry2 <- c(-0.1, max(-log10(p.mod1)))*1.1
+par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
+rx2 <- c(-1, 1) * 1.1 * max(abs(log2FC1))
+ry2 <- c(-0.1, max(-log10(p.mod1))) * 1.1
 plot(log2FC1, -log10(p.mod1), 
-     pch=19, xlim=rx2, ylim=ry2, col=trop[2],
-     xlab=bquote(paste(log[2], " (fold change)")), 
-     ylab=bquote(paste(-log[10], " (p-value)")))
-abline(v=seq(-10,10,1), col="lightgray", lty="dotted")
-abline(h=seq(0,23,1), col="lightgray", lty="dotted")
-points(log2FC1, -log10(p.mod1), pch=19, col=trop[2])
-title("Volcano plot: TNBC vs. HER2+ in SRP019936 (gene level)")
+     pch = 19, xlim = rx2, ylim = ry2, col = trop[2],
+     xlab = bquote(paste(log[2], ' (fold change)')), 
+     ylab = bquote(paste(-log[10], ' (p-value)')))
+abline(v = seq(-10, 10, 1), col = 'lightgray', lty = 'dotted')
+abline(h = seq(0, 23, 1), col = 'lightgray', lty = 'dotted')
+points(log2FC1, -log10(p.mod1), pch = 19, col = trop[2])
+title('Volcano plot: TNBC vs. HER2+ in SRP019936 (gene level)')
 ```
 
 
 
 # Independence hypotheses weighting
-```{r IHW, fig.height=8, fig.width=8}
-## Find second project of interest (SRP032798), e.g. with parts of the abstract
+
+```{r IHW, fig.height = 8, fig.width = 8}
+## Find second project of interest (SRP032789), e.g. with parts of the abstract
 project_info2 <- abstract_search('To define the digital transcriptome of three breast cancer')
 
 ## Download the gene-level RangedSummarizedExperiment data
-download_study(project_info2$project)
+if(!file.exists(file.path('SRP032789', 'rse_gene.Rdata'))) {
+    download_study(project_info2$project)
+}
 
 ## Load the data
 load(file.path(project_info2$project, 'rse_gene.Rdata'))
@@ -230,7 +275,7 @@ rse2 <- scale_counts(rse_gene2)
 
 ## download additional phenotype data from 
 ## http://trace.ncbi.nlm.nih.gov/Traces/study/?acc=SRP032789
-pheno2 <- read.table('SraRunTable_SRP032789.txt', sep='\t', 
+pheno2 <- read.table('SraRunTable_SRP032789.txt', sep = '\t', 
                     header=TRUE,
                     stringsAsFactors = FALSE)
 
@@ -244,7 +289,7 @@ colData(rse2)$group <- pheno2$tumor_type_s
 table(colData(rse2)$group)   
     
 ## subset data to HER2 and TNBC types
-rse2 <- rse2[, rse2$group %in% c("HER2 Positive Breast Tumor", "TNBC Breast Tumor")]
+rse2 <- rse2[, rse2$group %in% c('HER2 Positive Breast Tumor', 'TNBC Breast Tumor')]
 rse2 
 
 ## obtain count matrix without filtering
@@ -258,10 +303,10 @@ dim(counts2)
 design <- model.matrix(~ rse2$group)
 design
 
-dge <- DGEList(counts=counts2)
+dge <- DGEList(counts = counts2)
 dge <- calcNormFactors(dge)
-v <- voom(dge,design,plot=TRUE)
-fit <- lmFit(v,design)
+v <- voom(dge, design,plot = TRUE)
+fit <- lmFit(v, design)
 fit <- eBayes(fit)
 t.mod2 <- fit$t[, 2]
 log2FC2 <- fit$coefficients[, 2]
@@ -284,12 +329,12 @@ ihw_res <- ihw(p.mod1 ~ t.mod2, alpha = 0.05)
 rejections(ihw_res)
 
 head(ihw_res@df)
-padj_bh_ihw <- p.adjust(ihw_res@df$weighted_pvalue, method = "BH")
-padj_bh <- p.adjust(p.mod1, method = "BH")
+padj_bh_ihw <- p.adjust(ihw_res@df$weighted_pvalue, method = 'BH')
+padj_bh <- p.adjust(p.mod1, method = 'BH')
 sum(padj_bh_ihw <= 0.05, na.rm = TRUE)
 sum(padj_bh <= 0.05, na.rm = TRUE)
 
-par(mfrow=c(1,2))
+par(mfrow = c(1, 2))
 hist(ihw_res@df$weighted_pvalue)
 hist(p.mod1)
 
@@ -301,12 +346,12 @@ ihw_res <- ihw(p.mod1 ~ counts1.mean, alpha = 0.05)
 rejections(ihw_res)
 
 head(ihw_res@df)
-padj_bh_ihw <- p.adjust(ihw_res@df$weighted_pvalue, method = "BH")
-padj_bh <- p.adjust(p.mod1, method = "BH")
+padj_bh_ihw <- p.adjust(ihw_res@df$weighted_pvalue, method = 'BH')
+padj_bh <- p.adjust(p.mod1, method = 'BH')
 sum(padj_bh_ihw <= 0.05, na.rm = TRUE)
 sum(padj_bh <= 0.05, na.rm = TRUE)
 
-par(mfrow=c(1,2))
+par(mfrow = c(1, 2))
 hist(ihw_res@df$weighted_pvalue)
 hist(p.mod1)
 ```
@@ -315,7 +360,7 @@ hist(p.mod1)
 # Concordance across studies
 
 ## p-values from both studies
-```{r, con, fig.width=8, fig.height=8}
+```{r, con, fig.width = 8, fig.height = 8}
 ## filter count matrix for study 2
 filter <- apply(counts2, 1, function(x) mean(x) > 5)
 counts2 <- counts2[filter, ]
@@ -339,40 +384,41 @@ for(i in 1:length(p.mod1.sort)){
 }
 
 ## all genes
-par(mfrow=c(1,1), font.lab=1.5, cex.lab=1.2, font.axis=1.5, cex.axis=1.2)
+par(mfrow = c(1, 1), font.lab = 1.5, cex.lab = 1.2, font.axis = 1.5, cex.axis = 1.2)
 plot(seq(1:length(p.mod1.sort)), conc, 
-     type="l", las=0,
-     xlim=c(0,20000),
-     ylim=c(0,20000),
-     xlab='ordered genes in study 1',
-     ylab='ordered genes in study 2',
-     main='Concordance')
+     type = 'l', las = 0,
+     xlim = c(0, 20000),
+     ylim = c(0, 20000),
+     xlab = 'ordered genes in study 1',
+     ylab = 'ordered genes in study 2',
+     main = 'Concordance')
 for(k in 1:3){
-    abline(v=k*5000, cex=0.5, col="lightgrey")
-    abline(h=k*5000, cex=0.5, col="lightgrey")
+    abline(v = k * 5000, cex = 0.5, col = 'lightgrey')
+    abline(h = k * 5000, cex = 0.5, col = 'lightgrey')
 }
-lines(seq(1:length(p.mod1.sort)), conc, col="black", lwd=2)
+lines(seq(1:length(p.mod1.sort)), conc, col = 'black', lwd = 2)
 
 
 ## top 1000 genes
-par(mfrow=c(1,1), font.lab=1.5, cex.lab=1.2, font.axis=1.5, cex.axis=1.2)
+par(mfrow = c(1, 1), font.lab = 1.5, cex.lab = 1.2, font.axis = 1.5, cex.axis = 1.2)
 plot(seq(1:1000), conc[1:1000], 
-     type="l", las=0,
-     xlim=c(0,1000),
-     ylim=c(0,1000),
-     xlab='ordered genes in study 1',
-     ylab='ordered genes in study 2',
-     main='Concordance')
+     type = 'l', las = 0,
+     xlim = c(0, 1000),
+     ylim = c(0, 1000),
+     xlab = 'ordered genes in study 1',
+     ylab = 'ordered genes in study 2',
+     main = 'Concordance')
 for(k in 1:2){
-    abline(v=k*500, cex=0.5, col="lightgrey")
-    abline(h=k*500, cex=0.5, col="lightgrey")
+    abline(v = k * 500, cex = 0.5, col = 'lightgrey')
+    abline(h = k * 500, cex = 0.5, col = 'lightgrey')
 }
-lines(seq(1:1000), conc[1:1000], col="black", lwd=2)
+lines(seq(1:1000), conc[1:1000], col = 'black', lwd = 2)
 ```
 
 
 ## p-values IHW and raw p-values
-```{r, con-IHW, fig.width=8, fig.height=8}
+
+```{r, con-IHW, fig.width = 8, fig.height = 8}
 ## use t-values from study 2 as weights for study 1
 ihw_res <- ihw(p.mod1 ~ t.mod2, alpha = 0.05)
 
@@ -392,47 +438,75 @@ for(i in 1:length(p.mod1.sort)){
 }
 
 ## all genes
-par(mfrow=c(1,1), font.lab=1.5, cex.lab=1.2, font.axis=1.5, cex.axis=1.2)
+par(mfrow = c(1, 1), font.lab = 1.5, cex.lab = 1.2, font.axis = 1.5, cex.axis = 1.2)
 plot(seq(1:length(p.mod1.sort)), conc, 
-     type="l", las=0,
-     xlim=c(0,20000),
-     ylim=c(0,20000),
-     xlab='ordered genes without IHW',
-     ylab='ordered genes with IHW',
-     main='Concordance')
+     type = 'l', las = 0,
+     xlim = c(0, 20000),
+     ylim = c(0, 20000),
+     xlab = 'ordered genes without IHW',
+     ylab = 'ordered genes with IHW',
+     main = 'Concordance')
 for(k in 1:3){
-    abline(v=k*5000, cex=0.5, col="lightgrey")
-    abline(h=k*5000, cex=0.5, col="lightgrey")
+    abline(v = k * 5000, cex = 0.5, col = 'lightgrey')
+    abline(h = k * 5000, cex = 0.5, col = 'lightgrey')
 }
-lines(seq(1:length(p.mod1.sort)), conc, col="black", lwd=2)
+lines(seq(1:length(p.mod1.sort)), conc, col = 'black', lwd = 2)
 
 
 ## top 2000 genes
-par(mfrow=c(1,1), font.lab=1.5, cex.lab=1.2, font.axis=1.5, cex.axis=1.2)
+par(mfrow = c(1, 1), font.lab = 1.5, cex.lab = 1.2, font.axis = 1.5, cex.axis = 1.2)
 plot(seq(1:2000), conc[1:2000], 
-     type="l", las=0,
-     xlim=c(0,2000),
-     ylim=c(0,2000),
-     xlab='ordered genes without IHW',
-     ylab='ordered genes with IHW',
-     main='Concordance')
+     type = 'l', las = 0,
+     xlim = c(0, 2000),
+     ylim = c(0, 2000),
+     xlab = 'ordered genes without IHW',
+     ylab = 'ordered genes with IHW',
+     main = 'Concordance')
 for(k in 1:4){
-    abline(v=k*500, cex=0.5, col="lightgrey")
-    abline(h=k*500, cex=0.5, col="lightgrey")
+    abline(v = k * 500, cex = 0.5, col = 'lightgrey')
+    abline(h = k * 500, cex = 0.5, col = 'lightgrey')
 }
-lines(seq(1:2000), conc[1:2000], col="black", lwd=2)
+lines(seq(1:2000), conc[1:2000], col = 'black', lwd = 2)
 ```
 
 
 
 
-# Technical reproducibility information
-```{r TRI}
-## Reproducibility info
-proc.time()
+# Reproducibility
+
+This analysis report was made possible thanks to:
+
+* R `r citep(bib[['R']])`
+* `r Biocpkg('BiocStyle')` `r citep(bib[['BiocStyle']])`
+* `r Biocpkg('derfinder')` `r citep(bib[['derfinder']])`
+* `r CRANpkg('devtools')` `r citep(bib[['devtools']])`
+* `r Biocpkg('edgeR')` `r citep(bib[['edgeR']])`
+* `r Biocpkg('IHW')` `r citep(bib[['IHW']])`
+* `r CRANpkg('knitcitations')` `r citep(bib[['knitcitations']])`
+* `r CRANpkg('matrixStats')` `r citep(bib[['matrixStats']])`
+* `r Biocpkg('qvalue')` `r citep(bib[['qvalue']])`
+* `r Githubpkg('leekgroup/recount')` `r citep(bib[['recount']])`
+* `r CRANpkg('rmarkdown')` `r citep(bib[['rmarkdown']])`
+* `r Githubpkg('alyssafrazee/RSkittleBrewer')` `r citep(bib[['RSkittleBrewer']])`
+* `r Biocpkg('SummarizedExperiment')` `r citep(bib[['SummarizedExperiment']])`
+* `r Biocpkg('limma')` `r citep(bib[['voom']])`
+
+[Bibliography file](recount_SRP019936.bib)
+
+```{r bibliography, results='asis', echo=FALSE, warning = FALSE}
+## Print bibliography
+bibliography()
+```
+
+
+```{r reproducibility}
+## Time spent creating this report:
+diff(c(timestart, Sys.time()))
+
+## Date this report was generated
 message(Sys.time())
+
+## Reproducibility info
 options(width = 120)
 devtools::session_info()
 ```
-
-This document was processed on: `r Sys.Date()`.

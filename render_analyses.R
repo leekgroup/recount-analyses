@@ -10,7 +10,6 @@ biocLite(c('BiocParallel', 'BiocStyle', 'derfinder', 'devtools', 'dplyr', 'edgeR
 devtools::install_github('leekgroup/recount')
 devtools::install_github('alyssafrazee/RSkittleBrewer')
 
-
 ## Render all the files in this repo:
 library('rmarkdown')
 library('BiocStyle')
