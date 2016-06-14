@@ -16,7 +16,7 @@ projects <- names(index)[index]
 ## Check that it's not including GTEx
 stopifnot(names(index)[!index] == 'SRP012682')
 
-print('Number of projects used')
+print('Number of projects')
 length(projects)
 
 ## Define parallel environment to use
@@ -27,8 +27,7 @@ coverageMatrix <- bplapply(projects, function(project) {
     message(paste(Sys.time(), 'processing project', project))
     coverage_matrix(project, chr = 'chrX', regions = xist_exons,
         chunksize = length(xist_exons), verbose = FALSE,
-        outdir = file.path('/dcl01/leek/data/sra_to_upload3/', project),
-        bpparam = SerialParam())
+        outdir = file.path('/dcl01/leek/data/sra_to_upload3/', project))
 }, BPPARAM = bp)
 
 message(paste(Sys.time(), 'Combining across all projects'))
