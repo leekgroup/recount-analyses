@@ -378,12 +378,14 @@ for(i in seq_len(length(gene_id))){
 
 names(p_gene) <- gene_id
 q_gene <- qvalue(p_gene)$q
-#determine the number of gene-level exons differentially expressed q<0.05
+## Determine the number of gene-level exons differentially expressed q<0.05
 sum(q_gene<0.05)
 
-As above, 'topGO' can be utilized to assign biological function to differentially expressed exons.
+## As above, 'topGO' can be utilized to assign biological function to 
+## differentially expressed exons.
 
-## Gene set analysis (p-values of genes derived with Simes' rule from exon p-values)
+## Gene set analysis (p-values of genes derived with Simes' rule from exon 
+## p-values)
 interesting <- function(x) x < 0.05
 
 topgoobjBP <- new('topGOdata', 
