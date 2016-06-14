@@ -64,7 +64,7 @@ library('RSkittleBrewer')
 library('IHW')
 ```
 
-
+We first download data for the project of interest (SRP019936), obtaining expression data. Data can be summarized across samples and genes using colData() and rowData(), respectively.
 
 # Gene level analysis
 ```{r download-study1}
@@ -91,6 +91,8 @@ colData(rse_gene1)
 ## gene info 
 rowData(rse_gene1)
 ```
+
+Downloaded count data are first scaled to take into account differing coverage between samples. Phenotype data (pheno) are obtained and ordered to match the sample order of the gene expression data (rse_gene). Only those samples that are HER2-positive or TNBC are included for analysis. Prior to differential gene expression analysis, count data are obtained in matrix format and then filtered to only include those genes with greater than five average normalized counts across all samples.
 
 
 ```{r filter-study1}
@@ -125,6 +127,7 @@ counts1 <- counts1[filter, ]
 dim(counts1)
 ```
 
+To get a better sense of the data, we plot the mean-variance relationship for each gene. Similarly, we run principal component analysis (PCA) to identify any sample outliers within the data. We assess the variance explained by each of the first 11 PCs as well as visualize the relationship of each sample in the first two PCs.
 
 ```{r exploratory-genes, fig.height = 8, fig.width = 8}
 ## set colors 
@@ -152,6 +155,8 @@ plot(expr.pca$v[, 1], expr.pca$v[, 2], pch = 19, col = trop[cols], cex = 1.5,
 legend('topright', pch = 19, col = trop[c(1, 2)],
        names(summary(as.factor(rse1$group))))
 ```
+
+PCA identifies a clear sample outlier in these data. This sample is removed from analysis prior to moving forward with differential expression analyses. As mentioned previously, prior to differential gene expression analysis, count data are filtered to only include those genes with greater than five average normalized counts across all samples.
 
 ```{r filter-study1-2}
 ## Scale counts by taking into account the total coverage per sample
@@ -187,6 +192,7 @@ counts1 <- counts1[filter, ]
 dim(counts1)
 ```
 
+After sample outlier removal, PCA is again run to obtain a global understanding of the mean-variance relationship at each gene and the global relationship between samples included for study.
 
 ```{r exploratory-genes-2, fig.height = 8, fig.width = 8}
 ## set colors 
@@ -215,6 +221,7 @@ legend('topright', pch = 19, col = trop[c(1, 2)],
        names(summary(as.factor(rse1$group))))
 ```
 
+Differential gene expression between TNBC and HER2-positive samples is determined using limma and voom. Differentially expressed genes are visualized using a volcano plot to compare the effect size of the differential expression (as measured by the log2(fold change) in expression) and its significance (-log10p-value).
 
 
 
@@ -253,7 +260,7 @@ points(log2FC1, -log10(p.mod1), pch = 19, col = trop[2])
 title('Volcano plot: TNBC vs. HER2+ in SRP019936 (gene level)')
 ```
 
-
+To compare these findings back to the breast cancer transcriptome data used to identify differential gene, exon, expressed region, and junction (SRP032798), we must again acquire these data, filter the read counts, and summarize gene expreesion as explained previously.
 
 # Independence hypotheses weighting
 
@@ -297,6 +304,7 @@ counts2 <- assays(rse2)$counts
 dim(counts2)
 ```
 
+Differential gene expression is performed as it was done previously (link to other Rmd file?). Genes found in study 2 (SRP032798) that are also present in study 1 (SRP019936) are included for analysis. Independence hypotheses weighting (IHW) allows for the use of previous findings to be applied as priors to a current analysis as a means to improve power in the current study. Here, either p-values or counts from study 2 were used as weights for the differential expression analysis in study 1. For each, P-value distributions of the differential expression analysis after applying IHW using either the p-value or counts data as priors are compared. 
 
 ```{r voom-study2}
 ## Perform differential expression analysis with limma-voom
@@ -314,7 +322,7 @@ p.mod2 <- fit$p.value[, 2]
 q.mod2 <- qvalue(p.mod2)$q
 
 
-## some summary statistics
+## Differential expression summary statistics
 sum(p.mod1 <= 0.05)
 sum(q.mod1 <= 0.05)
 
@@ -355,6 +363,8 @@ par(mfrow = c(1, 2))
 hist(ihw_res@df$weighted_pvalue)
 hist(p.mod1)
 ```
+
+To determine the concordance across studies, p-values are ranked and compared across genes present in both studies. Results are plotted such that the points falling along the identity  line would indicate complete concodance between the two studies. 
 
 
 # Concordance across studies
