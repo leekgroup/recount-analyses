@@ -9,7 +9,7 @@ output:
 ---
 
 
-Here is an example of how to download and analyze a `RangedSummarizedExperiment` object with the gene counts with SRA study id [SRP032798](http://trace.ncbi.nlm.nih.gov/Traces/sra/?study=SRP032798).  Here we show how to use `limma` and `topGO`  to perform the differential expression and gene set enrichment analysis.
+Included is an example of how to download and analyze expression data from SRA study  SRP032798(http://trace.ncbi.nlm.nih.gov/Traces/sra/?study=SRP032798). The data come from human breast cancer samples, and we compare the transcriptomes of triple negative breast cancer(TNBC) and HER2-positive breast cancer samples. Code here demonstrates how to carry out differential gene, exon, expressed region, and exon-exon junction analyses within a single study using 'limma' and 'voom'. We test for concordance among the results of each analysis and demonstrate how to carry out gene ontology analysis using 'topGO' to characterize top hits from differential expression anlyses
 
 We first load the required packages.
 
@@ -29,6 +29,9 @@ library(derfinder)
 
 
 # Gene level analysis
+
+We first download the project of interest (SRP032798), obtaining expression data for the study of interest. We obtain summaries of the number of samples and genes included using colData() and rowData(), respectively.
+
 ```{r download-genes}
 ## Find the project of interest (SRP032798), e.g. with parts of the abstract
 project_info <- abstract_search('To define the digital transcriptome of three breast cancer')
@@ -55,9 +58,8 @@ colData(rse_gene)
 rowData(rse_gene)
 ```
 
+Downloaded count data are first scaled to take into account differing coverage between samples. Phenotype data (pheno) are obtained and ordered to match the sample order of the gene expression data (rse_gene). Only those samples that are HER2-positive or TNBC are included for analysis. Prior to differential gene expression analysis, count data are obtained in matrix format and then filtered to only include those genes with greater than five average normalized counts across all samples.
 
-
-Next we perform filtering on both the samples and genes in order to provide a count data set for differential expression analysis.
 ```{r filter-genes}
 ## Scale counts by taking into account the total coverage per sample
 rse <- scale_counts(rse_gene)
@@ -91,6 +93,7 @@ dim(counts)
 counts_genes <- counts
 ```
 
+To get a better sense of the data, we plot the mean-variance relationship for each gene. Similarly, we run principal component analysis (PCA) to identify any sample outliers within the data. We assess the variance explained by each of the first 11 PCs as well as visualize the relationship of each sample in the first two PCs.
 
 ```{r exploratory-genes, fig.height=8, fig.width=8}
 ## set colors 
@@ -104,7 +107,7 @@ plot(rowMeans(log2(counts+1)), rowVars(log2(counts+1)),
 ## calculate PCs with svd function
 expr.pca <- svd(counts - rowMeans(counts))
 
-## plot PCs
+## plot variance explained by PCs
 par(font.lab=2, cex.lab=1.2, font.axis=2, cex.axis=1.2)
 plot(expr.pca$d^2/sum(expr.pca$d^2), pch=19, col=trop[2], cex=1.5,
      ylab="Fraction of variance explained (gene level)", xlab="PC #",
@@ -119,6 +122,7 @@ legend("topright", pch=19, col=trop[c(1,2)],
        names(summary(as.factor(rse$group))))
 ```
 
+Having determined there are no sample outliers in these data, we carry out differential gene expression analysis. Differential gene expression between TNBC and HER2-positive samples are determined using limma and voom. Differentially expressed genes are visualized using a volcano plot to compare the effect size of the differential expression (as measured by the log2(fold change) in expression) and its significance (-log10p-value).
 
 ```{r voom-genes, fig.height=8, fig.width=8}
 ## Perform differential expression analysis with limma-voom
@@ -136,6 +140,7 @@ q.mod <- qvalue(p.mod)$q
 res.genes <- data.frame(log2FC, p.mod, q.mod)
 rownames(res.genes) <- rownames(counts)
 #str(as.character(rse@rowRanges@seqnames))
+#determine the number of genes differentially expressed q<0.05
 sum(res.genes$q.mod<0.05)
 
 
@@ -162,14 +167,14 @@ title("Volcano plot: TNBC vs. HER2+ in SRP032798 (gene level)")
 
 
 # Gene set analysis
-Here we load `topGO`, a gene set analysis library, set the statistical significance measure for each transcript to be the p-value from the differential expression tests between the groups (previous section), and define our gene selection function to select genes with `q < 0.05` -- this is the cutoff at which we will consider genes "interesting" or differentially expressed for this analysis.  
+To get a better understanding of those genes showing differential gene expression, we utilize `topGO`, a gene set analysis library. Genes included in this analysis are those reaching a q-value cutoff less than 0.05. 
 
 ```{r topgo-prep} 
 names(q.mod) <- rownames(counts)
 interesting <- function(x) x < 0.05
 ```
 
-Next we make `topGO` objects and run the enrichment tests. We will use the Kolomogorov-Smirnov (`ks`) test for distributional differences: here, we would like to know whether each GO group is "enriched" for differentially expressed (q.mod < 0.05) genes. Equivalently, we are testing whether the p-value distributions are the same for genes in and outside of each gene ontology. We run tests on the "biological processes" ontology. 
+After determining which genes to include for analysis, `topGO` objects are generated and the enrichment tests are run. The Kolomogorov-Smirnov (`ks`) test is used to test for distributional differences. Here, we ask whether each GO group is "enriched" for differentially expressed (q.mod < 0.05) genes. Equivalently, we are testing whether the p-value distributions are the same for genes in and outside of each gene ontology. We run tests on the "biological processes" ontology. 
 
 ```{r bp}
 topgoobjBP <- new('topGOdata', 
@@ -186,7 +191,9 @@ head(bpres_gene, n=10)
 
 
 # Exon level analysis
-**In this analysis, we include all exons that map to the previous filtered genes.**
+**As above, we're interested here in differential expression. However, rather than summarizing across genes, this analysis will look for differential expression at the exon level. In this analysis, we include all exons that map to the previous filtered genes and again carry out differential expression analysis  using limma and voom.**
+
+Here, we download data from the same project as above (SRP032798); however, this time, we are interested in obtaining the exon-level data.
 
 ```{r download-exons}
 ## Find a project of interest (SRP032798)
@@ -207,6 +214,7 @@ rse_exon
 colData(rse_exon)
 ```
 
+As above, downloaded count data are first scaled to take into account differing coverage between samples. The same phenotype data (pheno) are used and again ordered to match the sample order of the expression data (rse_exon). Only those samples that are HER2-positive or TNBC are included for analysis. Prior to differential exon expression analysis, count data are obtained in matrix format and then filtered to only include exons within genes that had been analyzed previously.
 
 
 ```{r exons}
@@ -243,6 +251,7 @@ filter <- rownames(counts) %in% rownames(counts_genes)
 counts <- counts[filter, ]
 dim(counts)
 ```
+As above, to get a better sense of the data, we assess the mean-variance relationship for each exon. Similarly, we run principal component analysis (PCA) to identify any sample outliers within the data. We assess the variance explained by each of the first 11 PCs as well as visualize the relationship of each sample in the first two PCs.
 
 
 ```{r exploratory-exons, fig.height=8, fig.width=8}
@@ -272,6 +281,7 @@ legend("topright", pch=19, col=trop[c(1,2)],
        names(summary(as.factor(rse$group))))
 ```
 
+Again, differential expression analysis is carried out using limma and voom; however, this time at the exon, rather than gene, level. Data are again visualized using a volcano plot to assess the strength (log2FC) and statistical significance (-log10p-value) for each exon.
 
 ```{r voom-exons, fig.height=8, fig.width=8}
 design <- model.matrix(~ rse$group)
@@ -286,6 +296,7 @@ log2FC <- fit$coefficients[, 2]
 p.mod <- fit$p.value[, 2]
 q.mod <- qvalue(p.mod)$q
 res.exons <- data.frame(log2FC, p.mod, q.mod)
+#determine the number of exons differentially expressed q<0.05
 sum(res.exons$q.mod<0.05)
 
 ## Volcano plot
@@ -302,7 +313,7 @@ points(log2FC, -log10(p.mod), pch=19, col=trop[2])
 title("Volcano plot: TNBC vs. HER2+ in SRP032798 (exon level)")
 ```
 
-
+To compare findings at the gene and exon level, we obtained a single exon-level p-value for each gene included at the gene-level analysis. To do this, we utilized Simes' rule [PMID: 23330866], such that for each gene included in the gene-level analysis, the p-values for exons within that gene were extracted and sorted. Each exon-level p-value is then multiplied by the number of exons present within the gene. For each exon (1,2...n), this quantity is divided by that exon's rank (where 1=most significant exon and n=least significant). The minimum value from this calcultion is assigned as the exon-level p-value at each gene.
 
 ```{r, exons-to-genes}
 gene_id <- unique(rownames(counts))
@@ -322,9 +333,10 @@ for(i in 1:length(gene_id)){
 
 names(p_gene) <- gene_id
 q_gene <- qvalue(p_gene)$q
+#determine the number of gene-level exons differentially expressed q<0.05
 sum(q_gene<0.05)
 
-
+As above, 'topGO' can be utilized to assign biological function to differentially expressed exons.
 
 ## Gene set analysis (p-values of genes derived with Simes' rule from exon p-values)
 interesting <- function(x) x < 0.05
@@ -340,7 +352,7 @@ bpres_exon <- GenTable(topgoobjBP, pval=bptest, topNodes=length(bptest@score), n
 head(bpres_exon, n=10)                  
 ```
 
-
+To determine the concordance between the gene- and exon-level analyses, the top hits (as determined by p-value) are compared. Results are plotted such that the points falling along the identity line would indicate complete agreement between the top hits of each analysis. 
 
 # Concordance (genes)
 ```{r, con, fig.width=8, fig.height=8}
@@ -395,7 +407,7 @@ for(k in 1:5){
 lines(seq(1:length(p.mod1.sort[1:100])), conc[1:100], col="black", lwd=2)
 ```
 
-
+Concordance can also be calculated looking at the gene ontology (GO) groups identified from the gene and exon-level analyses. Again, we plot the agreement between the two analyses such that complete agreement between the two analyses would fall along the identity line.
 
 # Concordance (GO groups)
 ```{r, con-GO, fig.width=8, fig.height=8}
