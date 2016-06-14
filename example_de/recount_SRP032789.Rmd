@@ -47,7 +47,7 @@ names(bib) <- names(bibs)
 ```
 
 
-Here is an example of how to download and analyze a `RangedSummarizedExperiment` object with the gene counts with SRA study id [SRP032789](http://trace.ncbi.nlm.nih.gov/Traces/sra/?study=SRP032789).  Here we show how to use `limma` and `topGO`  to perform the differential expression and gene set enrichment analysis.
+Included is an example of how to download and analyze expression data from SRA study [SRP032798](http://trace.ncbi.nlm.nih.gov/Traces/sra/?study=SRP032798). The data come from human breast cancer samples, and we compare the transcriptomes of triple negative breast cancer(TNBC) and HER2-positive breast cancer samples. Code here demonstrates how to carry out differential gene, exon, expressed region, and exon-exon junction analyses within a single study using 'limma' and 'voom'. We test for concordance among the results of each analysis and demonstrate how to carry out gene ontology analysis using 'topGO' to characterize top hits from differential expression analyses.
 
 We first load the required packages.
 
@@ -206,6 +206,7 @@ title('Volcano plot: TNBC vs. HER2+ in SRP032789 (gene level)')
 
 
 # Gene set analysis
+
 To get a better understanding of those genes showing differential gene expression, we utilize `topGO`, a gene set analysis library. Genes included in this analysis are those reaching a q-value cutoff less than 0.05. 
 
 ```{r topgo-prep} 
@@ -231,6 +232,7 @@ head(bpres_gene, n = 10)
 
 
 # Exon level analysis
+
 **As above, we're interested here in differential expression. However, rather than summarizing across genes, this analysis will look for differential expression at the exon level. In this analysis, we include all exons that map to the previous filtered genes and again carry out differential expression analysis  using limma and voom.**
 
 Here, we download data from the same project as above (SRP032798); however, this time, we are interested in obtaining the exon-level data.
