@@ -44,11 +44,13 @@ bib <- read.bibtex('recount_SRP019936.bib')
 ## Assign short names
 names(bib) <- names(bibs)
 ```
+In these analyses, we compare differential expression findings from two different studies, each of which looked to compare the transcriptomes of human breast cancer samples. 
 
-Here we label in the following way:
+Data herein are labeled as follows:
 
--   study1 = SRP019936 (that is the 'new' study)
--   study2 = SRP032789 (this is the study that we used for gene, exon, and expressed region analyses)
+-   study1 = SRP019936 (This is the 'new' study)
+-   study2 = SRP032798 (This is the study that also used for gene, exon, expressed region, and junction-level analyses)
+
 
 
 # Load R-packages
