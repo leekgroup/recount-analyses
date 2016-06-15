@@ -1,7 +1,7 @@
 ---
 title: 'recount (overlay two studies)'
 author: 'Kai Kammers and Shannon Ellis'
-date: 'June 09, 2016'
+date: 'June 15, 2016'
 output:
   BiocStyle::html_document:
     toc: true
@@ -44,12 +44,13 @@ bib <- read.bibtex('recount_SRP019936.bib')
 ## Assign short names
 names(bib) <- names(bibs)
 ```
+
 In these analyses, we compare differential expression findings from two different studies, each of which looked to compare the transcriptomes of human breast cancer samples. 
 
 Data herein are labeled as follows:
 
 -   study1 = SRP019936 (This is the 'new' study)
--   study2 = SRP032798 (This is the study that also used for gene, exon, expressed region, and junction-level analyses)
+-   study2 = SRP032798 (This is the study that also used for gene, exon, expressed region, and exon-exon junction analyses)
 
 
 
@@ -66,7 +67,7 @@ library('RSkittleBrewer')
 library('IHW')
 ```
 
-We first download data for the project of interest (SRP019936), obtaining expression data. Data can be summarized across samples and genes using colData() and rowData(), respectively.
+We first download data for the project of interest (SRP019936), obtaining expression data. Data can be summarized across samples and genes using `colData()` and `rowData()`, respectively.
 
 # Gene level analysis
 ```{r download-study1}
@@ -79,7 +80,6 @@ if(!file.exists(file.path('SRP019936', 'rse_gene.Rdata'))) {
     download_study(project_info1$project)
 }
 
-
 ## Load the data
 load(file.path(project_info1$project, 'rse_gene.Rdata'))
 rse_gene1 <- rse_gene
@@ -90,29 +90,29 @@ browse_study(project_info1$project)
 ## This is the sample phenotype data provided by the recount project
 colData(rse_gene1)
 
-## gene info 
+## Gene info 
 rowData(rse_gene1)
 ```
 
-Downloaded count data are first scaled to take into account differing coverage between samples. Phenotype data (pheno) are obtained and ordered to match the sample order of the gene expression data (rse_gene). Only those samples that are HER2-positive or TNBC are included for analysis. Prior to differential gene expression analysis, count data are obtained in matrix format and then filtered to only include those genes with greater than five average normalized counts across all samples.
+Downloaded count data are first scaled to take into account differing coverage between samples. Phenotype data (`pheno`) are obtained and ordered to match the sample order of the gene expression data (`rse_gene`). Only those samples that are HER2-positive or TNBC are included for analysis. Prior to differential gene expression analysis, count data are obtained in matrix format and then filtered to only include those genes with greater than five average normalized counts across all samples.
 
 
 ```{r filter-study1}
 ## Scale counts by taking into account the total coverage per sample
 rse1 <- scale_counts(rse_gene1)
 
-## download pheno data from 
+## Download pheno data from 
 ## http://trace.ncbi.nlm.nih.gov/Traces/study/?acc=SRP019936
 pheno1 <- read.table('SraRunTable_SRP019936.txt', sep = '\t', 
     header=TRUE,
     stringsAsFactors = FALSE)
 
-## obtain correct order for pheno data
+## Obtain correct order for pheno data
 pheno1 <- pheno1[match(rse1$run, pheno1$Run_s), ]
 identical(pheno1$Run_s, rse1$run)
 head(cbind(pheno1$Run_s, rse1$run))
 
-## obtain grouping information
+## Obtain grouping information
 colData(rse1)$group <- pheno1$tissue_s
 table(colData(rse1)$group)   
       
@@ -120,10 +120,10 @@ table(colData(rse1)$group)
 rse1 <- rse1[, rse1$group %in% c('HER2+ Breast Tumor', 'Triple Negative Breast Tumor')]
 rse1
 
-## obtain count matrix
+## Obtain count matrix
 counts1 <- assays(rse1)$counts
 
-## filter count matrix
+## Filter count matrix
 filter <- apply(counts1, 1, function(x) mean(x) > 5)
 counts1 <- counts1[filter, ]
 dim(counts1)
@@ -132,7 +132,7 @@ dim(counts1)
 To get a better sense of the data, we plot the mean-variance relationship for each gene. Similarly, we run principal component analysis (PCA) to identify any sample outliers within the data. We assess the variance explained by each of the first 11 PCs as well as visualize the relationship of each sample in the first two PCs.
 
 ```{r exploratory-genes, fig.height = 8, fig.width = 8}
-## set colors 
+## Set colors 
 trop <- RSkittleBrewer('tropical')[c(1, 2)]
 cols <- as.numeric(as.factor(rse1$group))
 
@@ -140,16 +140,16 @@ cols <- as.numeric(as.factor(rse1$group))
 plot(rowMeans(log2(counts1 + 1)), rowVars(log2(counts1 + 1)),
      pch = 19, col = trop[2])
 
-## calculate PCs with svd function
+## Calculate PCs with svd function
 expr.pca <- svd(counts1 - rowMeans(counts1))
 
-## plot PCs
+## Plot PCs
 par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
 plot(expr.pca$d^2/sum(expr.pca$d^2), pch = 19, col = trop[2], cex = 1.5,
      ylab = 'Percent of variance explained (gene level)', xlab = 'PC #',
      main = 'PCs')
 
-##plot PC1 vs. PC2
+## Plot PC1 vs. PC2
 par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
 plot(expr.pca$v[, 1], expr.pca$v[, 2], pch = 19, col = trop[cols], cex = 1.5,
      xlab = 'PC1', ylab = 'PC2',
@@ -164,31 +164,33 @@ PCA identifies a clear sample outlier in these data. This sample is removed from
 ## Scale counts by taking into account the total coverage per sample
 rse1 <- scale_counts(rse_gene1)
 
-## download pheno data from 
+## Download pheno data from 
 ## http://trace.ncbi.nlm.nih.gov/Traces/study/?acc=SRP019936
 pheno1 <- read.table('SraRunTable_SRP019936.txt', sep = '\t', 
     header=TRUE,
     stringsAsFactors = FALSE)
 
-## obtain correct order for pheno data
+## Obtain correct order for pheno data
 pheno1 <- pheno1[match(rse1$run, pheno1$Run_s), ]
 identical(pheno1$Run_s, rse1$run)
 head(cbind(pheno1$Run_s, rse1$run))
 
-## obtain grouping information
+## Obtain grouping information
 colData(rse1)$group <- pheno1$tissue_s
 table(colData(rse1)$group)   
       
-## subset data to HER2 and TNBC types
+## Subset data to HER2 and TNBC types
 rse1 <- rse1[, rse1$group %in% c('HER2+ Breast Tumor', 'Triple Negative Breast Tumor')]
 rse1
 
+## Remove outlier sample
 rse1 <- rse1[, -15]
 rse1
-## obtain count matrix
+
+## Obtain count matrix
 counts1 <- assays(rse1)$counts
 
-## filter count matrix
+## Filter count matrix
 filter <- apply(counts1, 1, function(x) mean(x) > 5)
 counts1 <- counts1[filter, ]
 dim(counts1)
@@ -197,7 +199,7 @@ dim(counts1)
 After sample outlier removal, PCA is again run to obtain a global understanding of the mean-variance relationship at each gene and the global relationship between samples included for study.
 
 ```{r exploratory-genes-2, fig.height = 8, fig.width = 8}
-## set colors 
+## Set colors 
 trop <- RSkittleBrewer('tropical')[c(1, 2)]
 cols <- as.numeric(as.factor(rse1$group))
 
@@ -205,16 +207,16 @@ cols <- as.numeric(as.factor(rse1$group))
 plot(rowMeans(log2(counts1 + 1)), rowVars(log2(counts1 + 1)),
      pch = 19, col = trop[2])
 
-## calculate PCs with svd function
+## Calculate PCs with svd function
 expr.pca <- svd(counts1 - rowMeans(counts1))
 
-## plot PCs
+## Plot PCs
 par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
 plot(expr.pca$d^2/sum(expr.pca$d^2), pch = 19, col = trop[2], cex = 1.5,
      ylab = 'Percent of variance explained (gene level)', xlab = 'PC #',
      main = 'PCs')
 
-##plot PC1 vs. PC2
+## Plot PC1 vs. PC2
 par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
 plot(expr.pca$v[, 1], expr.pca$v[, 2], pch = 19, col = trop[cols], cex = 1.5,
      xlab = 'PC1', ylab = 'PC2',
@@ -223,9 +225,7 @@ legend('topright', pch = 19, col = trop[c(1, 2)],
        names(summary(as.factor(rse1$group))))
 ```
 
-Differential gene expression between TNBC and HER2-positive samples is determined using limma and voom. Differentially expressed genes are visualized using a volcano plot to compare the effect size of the differential expression (as measured by the log2(fold change) in expression) and its significance (-log10p-value).
-
-
+Differential gene expression between TNBC and HER2-positive samples is determined using `limma` and `voom`. Differentially expressed genes are visualized using a volcano plot to compare the effect size of the differential expression [ as measured by the $log_2(fold change)$ in expression ] and its significance [ $-log_10(p-value)$ ].
 
 ```{r voom-study1-2, fig.height = 8, fig.width = 8}
 ## Perform differential expression analysis with limma-voom
@@ -242,7 +242,7 @@ t.mod1 <- fit$t[, 2]
 p.mod1 <- fit$p.value[, 2]
 q.mod1 <- qvalue(p.mod1)$q
 
-## Histogram
+## Histogram of p-values
 par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
 hist(p.mod1, col = trop[2], xlab = 'p-value',
      main = 'Histogramm of p-values', breaks = 100)
@@ -282,31 +282,31 @@ rse_gene2 <- rse_gene
 ## Scale counts by taking into account the total coverage per sample
 rse2 <- scale_counts(rse_gene2)
 
-## download additional phenotype data from 
+## Download additional phenotype data from 
 ## http://trace.ncbi.nlm.nih.gov/Traces/study/?acc=SRP032789
 pheno2 <- read.table('SraRunTable_SRP032789.txt', sep = '\t', 
                     header=TRUE,
                     stringsAsFactors = FALSE)
 
-## obtain correct order for pheno data
+## Obtain correct order for pheno data
 pheno2 <- pheno2[match(rse2$run, pheno2$Run_s), ]
 identical(pheno2$Run_s, rse2$run)
 head(cbind(pheno2$Run_s, rse2$run))
 
-## obtain grouping information
+## Obtain grouping information
 colData(rse2)$group <- pheno2$tumor_type_s
 table(colData(rse2)$group)   
     
-## subset data to HER2 and TNBC types
+## Subset data to HER2 and TNBC types
 rse2 <- rse2[, rse2$group %in% c('HER2 Positive Breast Tumor', 'TNBC Breast Tumor')]
 rse2 
 
-## obtain count matrix without filtering
+## Obtain count matrix without filtering
 counts2 <- assays(rse2)$counts
 dim(counts2)
 ```
 
-Differential gene expression is performed as it was done previously (link to other Rmd file?). Genes found in study 2 (SRP032798) that are also present in study 1 (SRP019936) are included for analysis. Independence hypotheses weighting (IHW) allows for the use of previous findings to be applied as priors to a current analysis as a means to improve power in the current study. Here, either p-values or counts from study 2 were used as weights for the differential expression analysis in study 1. For each, P-value distributions of the differential expression analysis after applying IHW using either the p-value or counts data as priors are compared. 
+Differential gene expression is performed as it was done previously (`recount_SRP032789.Rmd`). Genes found in study 2 (SRP032798) that are also present in study 1 (SRP019936) are included for analysis. Independence hypotheses weighting (IHW) allows for the use of previous findings to be applied as priors to a current analysis as a means to improve power in the current study. Here, absolute values of the test statistic from study 2 were used as weights for the differential expression analysis in study 1 and p-value distributions of the differential expression analysis before and after applying IHW are compared. 
 
 ```{r voom-study2}
 ## Perform differential expression analysis with limma-voom
@@ -324,49 +324,37 @@ p.mod2 <- fit$p.value[, 2]
 q.mod2 <- qvalue(p.mod2)$q
 
 
-## Differential expression summary statistics
-sum(p.mod1 <= 0.05)
-sum(q.mod1 <= 0.05)
-
-sum(p.mod2 <= 0.05)
-sum(q.mod2 <= 0.05)
-
-## use those genes from study 2 that are kept in study 1 
+## Use those genes from study 2 that are kept in study 1 
 t.mod2 <- t.mod2[names(t.mod1)]
 
-## use p-values from study 2 as weights for study 1
-ihw_res <- ihw(p.mod1 ~ t.mod2, alpha = 0.05)
-rejections(ihw_res)
+## Use values of the test statistic from study 2 as weights for study 1
+ihw.res <- ihw(p.mod1 ~ abs(t.mod2), alpha = 0.05)
+head(ihw.res@df)
 
-head(ihw_res@df)
-padj_bh_ihw <- p.adjust(ihw_res@df$weighted_pvalue, method = 'BH')
-padj_bh <- p.adjust(p.mod1, method = 'BH')
-sum(padj_bh_ihw <= 0.05, na.rm = TRUE)
-sum(padj_bh <= 0.05, na.rm = TRUE)
+## Raw (orignial) p-values = p.mod1
+p.ihw.raw <- ihw.res@df$pvalue
+sum(p.ihw.raw < 0.05)
 
-par(mfrow = c(1, 2))
-hist(ihw_res@df$weighted_pvalue)
-hist(p.mod1)
+## Raw (orignial) q-values = q.mod1
+q.ihw.raw <- qvalue(p.ihw.raw)$q
+sum(q.ihw.raw < 0.05)
 
+## Weighted p-values
+p.ihw <- ihw.res@df$weighted_pvalue
+sum(p.ihw < 0.05)
 
+## q-values obtained from weighted p-values
+q.ihw <- qvalue(p.ihw)$q
+sum(q.ihw < 0.05)
 
-## use counts as weights for study 1
-counts1.mean <- apply(counts1, 1, mean)
-ihw_res <- ihw(p.mod1 ~ counts1.mean, alpha = 0.05)
-rejections(ihw_res)
+## Recall: Differential expression summary statistics before IHW
+sum(p.mod1 < 0.05)
+sum(q.mod1 < 0.05)
 
-head(ihw_res@df)
-padj_bh_ihw <- p.adjust(ihw_res@df$weighted_pvalue, method = 'BH')
-padj_bh <- p.adjust(p.mod1, method = 'BH')
-sum(padj_bh_ihw <= 0.05, na.rm = TRUE)
-sum(padj_bh <= 0.05, na.rm = TRUE)
-
-par(mfrow = c(1, 2))
-hist(ihw_res@df$weighted_pvalue)
-hist(p.mod1)
+plot(p.ihw.raw, p.ihw)
 ```
 
-To determine the concordance across studies, p-values are ranked and compared across genes present in both studies. Results are plotted such that the points falling along the identity  line would indicate complete concodance between the two studies. 
+To determine the concordance across studies, p-values are ranked and compared across genes present in both studies. Results are plotted such that the points falling along the identity line would indicate complete concodance between the two studies. 
 
 
 # Concordance across studies
@@ -432,12 +420,12 @@ lines(seq(1:1000), conc[1:1000], col = 'black', lwd = 2)
 
 ```{r, con-IHW, fig.width = 8, fig.height = 8}
 ## use t-values from study 2 as weights for study 1
-ihw_res <- ihw(p.mod1 ~ t.mod2, alpha = 0.05)
+ihw.res <- ihw(p.mod1 ~ t.mod2, alpha = 0.05)
 
 ## sort p-values
 p.mod1.sort <- p.mod1[order(p.mod1)]
-p.mod2 <- ihw_res@df$weighted_pvalue
-names(p.mod2) <- rownames(ihw_res@df)
+p.mod2 <- ihw.res@df$weighted_pvalue
+names(p.mod2) <- rownames(ihw.res@df)
 p.mod2.sort <- p.mod2[order(p.mod2)]
 
 ## overlap for genes between studies

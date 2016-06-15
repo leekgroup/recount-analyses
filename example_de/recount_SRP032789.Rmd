@@ -1,7 +1,7 @@
 ---
 title: 'recount (gene and exon analyses)'
 author: 'Kai Kammers and Shannon Ellis'
-date: 'June 09, 2016'
+date: 'June 15, 2016'
 output:
   BiocStyle::html_document:
     toc: true
@@ -47,7 +47,7 @@ names(bib) <- names(bibs)
 ```
 
 
-Included is an example of how to download and analyze expression data from SRA study [SRP032798](http://trace.ncbi.nlm.nih.gov/Traces/sra/?study=SRP032798). The data come from human breast cancer samples, and we compare the transcriptomes of triple negative breast cancer(TNBC) and HER2-positive breast cancer samples. Code here demonstrates how to carry out differential gene, exon, expressed region, and exon-exon junction analyses within a single study using 'limma' and 'voom'. We test for concordance among the results of each analysis and demonstrate how to carry out gene ontology analysis using 'topGO' to characterize top hits from differential expression analyses.
+Included is an example of how to download and analyze expression data from SRA study [SRP032798](http://trace.ncbi.nlm.nih.gov/Traces/sra/?study=SRP032798). The data come from human breast cancer samples, and we compare the transcriptomes of triple negative breast cancer (TNBC) and HER2-positive breast cancer samples. Code here demonstrates how to carry out differential gene, exon, expressed region, and exon-exon junction analyses within a single study using `limma` and `voom`. We test for concordance among the results of each analysis and demonstrate how to carry out gene ontology analysis using `topGO` to characterize top hits from differential expression analyses.
 
 We first load the required packages.
 
@@ -68,7 +68,7 @@ library('derfinder')
 
 # Gene level analysis
 
-We first download the project of interest (SRP032798), obtaining expression data for the study of interest. We obtain summaries of the number of samples and genes included using colData() and rowData(), respectively.
+We first download the project of interest (SRP032798), obtaining expression data for the study of interest. We obtain summaries of the number of samples and genes included using `colData()` and `rowData()`, respectively.
 
 ```{r download-genes}
 ## Find the project of interest (SRP032789), e.g. with parts of the abstract
@@ -98,36 +98,36 @@ colData(rse_gene)
 rowData(rse_gene)
 ```
 
-Downloaded count data are first scaled to take into account differing coverage between samples. Phenotype data (pheno) are obtained and ordered to match the sample order of the gene expression data (rse_gene). Only those samples that are HER2-positive or TNBC are included for analysis. Prior to differential gene expression analysis, count data are obtained in matrix format and then filtered to only include those genes with greater than five average normalized counts across all samples.
+Downloaded count data are first scaled to take into account differing coverage between samples. Phenotype data (`pheno`) are obtained and ordered to match the sample order of the gene expression data (`rse_gene`). Only those samples that are HER2-positive or TNBC are included for analysis. Prior to differential gene expression analysis, count data are obtained in matrix format and then filtered to only include those genes with greater than five average normalized counts across all samples.
 
 ```{r filter-genes}
 ## Scale counts by taking into account the total coverage per sample
 rse <- scale_counts(rse_gene)
 
-## download additional phenotype data from 
+## Download additional phenotype data from 
 ## http://trace.ncbi.nlm.nih.gov/Traces/study/?acc=SRP032789
 pheno <- read.table('SraRunTable_SRP032789.txt', sep = '\t', 
     header = TRUE,
     stringsAsFactors = FALSE)
 
-## obtain correct order for pheno data
+## Obtain correct order for pheno data
 pheno <- pheno[match(rse$run, pheno$Run_s), ]
 identical(pheno$Run_s, rse$run)
 head(cbind(pheno$Run_s, rse$run))
 
-## obtain grouping information
+## Obtain grouping information
 colData(rse)$group <- pheno$tumor_type_s
 table(colData(rse)$group)   
     
-## subset data to HER2 and TNBC types
+## Subset data to HER2 and TNBC types
 rse <- rse[, rse$group %in% c('HER2 Positive Breast Tumor',
     'TNBC Breast Tumor')]
 rse 
 
-## obtain count matrix
+## Obtain count matrix
 counts <- assays(rse)$counts
 
-## filter count matrix
+## Filter count matrix
 filter <- apply(counts, 1, function(x) mean(x) > 5)
 counts <- counts[filter, ]
 dim(counts)
@@ -137,7 +137,7 @@ counts_genes <- counts
 To get a better sense of the data, we plot the mean-variance relationship for each gene. Similarly, we run principal component analysis (PCA) to identify any sample outliers within the data. We assess the variance explained by each of the first 11 PCs as well as visualize the relationship of each sample in the first two PCs.
 
 ```{r exploratory-genes, fig.height = 8, fig.width = 8}
-## set colors 
+## Set colors 
 trop <- RSkittleBrewer('tropical')[c(1, 2)]
 cols <- as.numeric(as.factor(rse$group))
 
@@ -145,16 +145,16 @@ cols <- as.numeric(as.factor(rse$group))
 plot(rowMeans(log2(counts + 1)), rowVars(log2(counts + 1)),
      pch = 19, col = trop[2])
 
-## calculate PCs with svd function
+## Calculate PCs with svd function
 expr.pca <- svd(counts - rowMeans(counts))
 
-## plot PCs
+## Plot PCs
 par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
 plot(expr.pca$d^2 / sum(expr.pca$d^2), pch = 19, col = trop[2], cex = 1.5,
      ylab = 'Fraction of variance explained (gene level)', xlab = 'PC #',
      main = 'PCs')
 
-##plot PC1 vs. PC2
+## Plot PC1 vs. PC2
 par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
 plot(expr.pca$v[, 1], expr.pca$v[, 2], pch = 19, col = trop[cols], cex = 1.5,
      xlab = 'PC1', ylab = 'PC2',
@@ -163,7 +163,7 @@ legend('topright', pch = 19, col = trop[c(1, 2)],
        names(summary(as.factor(rse$group))))
 ```
 
-Having determined there are no sample outliers in these data, we carry out differential gene expression analysis. Differential gene expression between TNBC and HER2-positive samples are determined using limma and voom. Differentially expressed genes are visualized using a volcano plot to compare the effect size of the differential expression (as measured by the log2(fold change) in expression) and its significance (-log10p-value).
+Having determined there are no sample outliers in these data, we carry out differential gene expression analysis. Differential gene expression between TNBC and HER2-positive samples are determined using `limma` and `voom`. Differentially expressed genes are visualized using a volcano plot to compare the effect size of the differential expression [ as measured by the $log_2(fold change)$ in expression ] and its significance [ $-log_10(p-value)$ ].
 
 ```{r voom-genes, fig.height = 8, fig.width = 8}
 ## Perform differential expression analysis with limma-voom
@@ -183,7 +183,7 @@ rownames(res.genes) <- rownames(counts)
 sum(res.genes$q.mod < 0.05)
 
 
-## Histogram
+## Histogram of p-values
 par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
 hist(p.mod, col = trop[2], xlab = 'p-value',
      main = 'Histogramm of p-values', breaks = 100)
@@ -214,7 +214,7 @@ names(q.mod) <- rownames(counts)
 interesting <- function(x) x < 0.05
 ```
 
-After determining which genes to include for analysis, `topGO` objects are generated and the enrichment tests are run. The Kolomogorov-Smirnov (`ks`) test is used to test for distributional differences. Here, we ask whether each GO group is "enriched" for differentially expressed (q.mod < 0.05) genes. Equivalently, we are testing whether the p-value distributions are the same for genes in and outside of each gene ontology. We run tests on the "biological processes" ontology. 
+After determining which genes to include for analysis, `topGO` objects are generated and the enrichment tests are run. The Kolomogorov-Smirnov (`ks`) test is used to test for distributional differences. Here, we ask whether each GO group is "enriched" for differentially expressed (`q.mod < 0.05`) genes. Equivalently, we are testing whether the p-value distributions are the same for genes in and outside of each gene ontology. We run tests on the "biological processes" ontology. 
 
 ```{r bp}
 topgoobjBP <- new('topGOdata', 
@@ -233,7 +233,7 @@ head(bpres_gene, n = 10)
 
 # Exon level analysis
 
-**As above, we're interested here in differential expression. However, rather than summarizing across genes, this analysis will look for differential expression at the exon level. In this analysis, we include all exons that map to the previous filtered genes and again carry out differential expression analysis  using limma and voom.**
+As above, we're interested here in differential expression. However, rather than summarizing across genes, this analysis will look for differential expression at the exon level. In this analysis, we include all exons that map to the previous filtered genes and again carry out differential expression analysis  using `limma` and `voom`.
 
 Here, we download data from the same project as above (SRP032798); however, this time, we are interested in obtaining the exon-level data.
 
@@ -258,49 +258,50 @@ rse_exon
 colData(rse_exon)
 ```
 
-As above, downloaded count data are first scaled to take into account differing coverage between samples. The same phenotype data (pheno) are used and again ordered to match the sample order of the expression data (rse_exon). Only those samples that are HER2-positive or TNBC are included for analysis. Prior to differential exon expression analysis, count data are obtained in matrix format and then filtered to only include exons within genes that had been analyzed previously.
+As above, downloaded count data are first scaled to take into account differing coverage between samples. The same phenotype data (`pheno`) are used and again ordered to match the sample order of the expression data (`rse_exon`). Only those samples that are HER2-positive or TNBC are included for analysis. Prior to differential exon expression analysis, count data are obtained in matrix format and then filtered to only include exons within genes that had been analyzed previously.
 
 
 ```{r exons}
 ## Scale counts by taking into account the total coverage per sample
 rse <- scale_counts(rse_exon)
 
-## download pheno data from 
+## Download pheno data from 
 ## http://trace.ncbi.nlm.nih.gov/Traces/study/?acc=SRP032789
 pheno <- read.table('SraRunTable_SRP032789.txt', sep = '\t', 
                     header = TRUE,
                     stringsAsFactors = FALSE)
 
-## obtain correct order for pheno data
+## Obtain correct order for pheno data
 pheno <- pheno[match(rse$run, pheno$Run_s), ]
 identical(pheno$Run_s, rse$run)
 head(cbind(pheno$Run_s, rse$run))
 
-## obtain grouping information
+## Obtain grouping information
 colData(rse)$group <- pheno$tumor_type_s
 table(colData(rse)$group)   
     
-## subset data to HER2 and TNBC types
+## Subset data to HER2 and TNBC types
 rse <- rse[, rse$group %in% c('HER2 Positive Breast Tumor',
     'TNBC Breast Tumor')]
 rse 
 rse.exon.filt <- rse
 
-## obtain count matrix
+## Obtain count matrix
 counts <- assays(rse)$counts
 dim(counts)
 
 
-## filter count matrix (keep exons that are in filtered gene counts matrix)
+## Filter count matrix (keep exons that are in filtered gene counts matrix)
 filter <- rownames(counts) %in% rownames(counts_genes)
 counts <- counts[filter, ]
 dim(counts)
 ```
+
 As above, to get a better sense of the data, we assess the mean-variance relationship for each exon. Similarly, we run principal component analysis (PCA) to identify any sample outliers within the data. We assess the variance explained by each of the first 11 PCs as well as visualize the relationship of each sample in the first two PCs.
 
 
 ```{r exploratory-exons, fig.height = 8, fig.width = 8}
-## set colors 
+## Set colors 
 trop <- RSkittleBrewer('tropical')[c(1, 2)]
 cols <- as.numeric(as.factor(rse$group))
 
@@ -308,16 +309,16 @@ cols <- as.numeric(as.factor(rse$group))
 plot(rowMeans(log2(counts + 1)), rowVars(log2(counts + 1)),
      pch = 19, col = trop[2])
 
-## calculate PCs with svd function
+## Calculate PCs with svd function
 expr.pca <- svd(counts - rowMeans(counts))
 
-## plot PCs
+## Plot PCs
 par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
 plot(expr.pca$d^2 / sum(expr.pca$d^2), pch = 19, col = trop[2], cex = 1.5,
      ylab = 'Fraction of variance explained', xlab = 'PC #',
      main = 'PCs (exon level)')
 
-##plot PC1 vs. PC2
+## Plot PC1 vs. PC2
 par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
 plot(expr.pca$v[, 1], expr.pca$v[, 2], pch = 19, col = trop[cols], cex = 1.5,
      xlab = 'PC1', ylab = 'PC2',
@@ -326,7 +327,7 @@ legend('topright', pch = 19, col = trop[c(1, 2)],
        names(summary(as.factor(rse$group))))
 ```
 
-Again, differential expression analysis is carried out using limma and voom; however, this time at the exon, rather than gene, level. Data are again visualized using a volcano plot to assess the strength (log2FC) and statistical significance (-log10p-value) for each exon.
+Again, differential expression analysis is carried out using `limma` and `voom`; however, this time at the exon, rather than gene, level. Data are again visualized using a volcano plot to assess the strength [ $log_2(fold change)$ ] and statistical significance [ $-log_10(p-value)$ ] for each exon.
 
 ```{r voom-exons, fig.height = 8, fig.width = 8}
 design <- model.matrix(~ rse$group)
@@ -341,7 +342,7 @@ log2FC <- fit$coefficients[, 2]
 p.mod <- fit$p.value[, 2]
 q.mod <- qvalue(p.mod)$q
 res.exons <- data.frame(log2FC, p.mod, q.mod)
-#determine the number of exons differentially expressed q<0.05
+## Determine the number of exons differentially expressed q<0.05
 sum(res.exons$q.mod<0.05)
 
 ## Volcano plot
@@ -405,18 +406,16 @@ To determine the concordance between the gene- and exon-level analyses, the top 
 # Concordance (genes)
 
 ```{r, con, fig.width = 8, fig.height = 8}
-## obtain and sort p-values for genes
+## Obtain and sort p-values for genes
 p.mod1 <- res.genes$p.mod
 names(p.mod1) <- rownames(res.genes)
 p.mod1.sort <- p.mod1[order(p.mod1)]
 
-
-## obtain dnd sort p-values for genes derived from exons
+## Obtain dnd sort p-values for genes derived from exons
 p.mod2 <- p_gene
 p.mod2.sort <- p.mod2[order(p.mod2)]
 
-
-## overlap for genes between studies
+## Overlap for genes between studies
 table(names(p.mod1.sort) %in% names(p.mod2.sort))
 table(names(p.mod2.sort) %in% names(p.mod1.sort))
 
@@ -425,7 +424,7 @@ for(i in seq_len(length(p.mod1.sort))) {
     conc[i] <- sum(names(p.mod1.sort)[1:i] %in% names(p.mod2.sort)[1:i])
 }
 
-
+## Concordance plots with different x-axis
 par(mfrow = c(1, 1), font.lab = 1.5, cex.lab = 1.2, font.axis = 1.5, cex.axis = 1.2)
 plot(seq(1:length(p.mod1.sort)), conc, 
      type = 'l', las = 0,
@@ -455,6 +454,22 @@ for(k in 1:5){
     abline(h = k * 20, cex = 0.5, col = 'lightgrey')
 }
 lines(seq(1:length(p.mod1.sort[1:100])), conc[1:100], col = 'black', lwd = 2)
+
+
+par(mfrow = c(1, 1), font.lab = 1.5, cex.lab = 1.2, font.axis = 1.5,
+    cex.axis = 1.2)
+plot(seq(1:length(p.mod1.sort[1:1000])), conc[1:1000], 
+     type = 'l',
+     xlim = c(0, 1000),
+     ylim = c(0, 1000),
+     xlab = 'ordered genes',
+     ylab = 'ordered genes (from exon analysis)',
+     main = 'Concordance')
+for(k in 1:5){
+    abline(v = k * 200, cex = 0.5, col = 'lightgrey')
+    abline(h = k * 200, cex = 0.5, col = 'lightgrey')
+}
+lines(seq(1:length(p.mod1.sort[1:1000])), conc[1:1000], col = 'black', lwd = 2)
 ```
 
 Concordance can also be calculated looking at the gene ontology (GO) groups identified from the gene and exon-level analyses. Again, we plot the agreement between the two analyses such that complete agreement between the two analyses would fall along the identity line.
@@ -462,19 +477,17 @@ Concordance can also be calculated looking at the gene ontology (GO) groups iden
 # Concordance (GO groups)
 
 ```{r, con-GO, fig.width = 8, fig.height = 8}
-## obtain and sort p-values for genes
+## Obtain and sort p-values for genes
 p.mod1 <- bpres_gene$GO.ID
 names(p.mod1) <- bpres_gene$GO.ID
 p.mod1.sort <- p.mod1
 
-
-## obtain and sort p-values for genes derived from exons
+## Obtain and sort p-values for genes derived from exons
 p.mod2 <- bpres_exon$GO.ID
 names(p.mod2) <- bpres_exon$GO.ID
 p.mod2.sort <- p.mod2
 
-
-## overlap for genes between studies
+## Overlap for genes between studies
 table(names(p.mod1.sort) %in% names(p.mod2.sort))
 table(names(p.mod2.sort) %in% names(p.mod1.sort))
 
@@ -513,6 +526,22 @@ for(k in 1:5){
     abline(h = k * 20, cex = 0.5, col = 'lightgrey')
 }
 lines(seq(1:length(p.mod1.sort[1:100])), conc[1:100], col = 'black', lwd = 2)
+
+
+par(mfrow = c(1, 1), font.lab = 1.5, cex.lab = 1.2, font.axis = 1.5,
+    cex.axis = 1.2)
+plot(seq(1:length(p.mod1.sort[1:1000])), conc[1:1000], 
+     type = 'l',
+     xlim = c(0, 1000),
+     ylim = c(0, 1000),
+     xlab = 'ordered GO groups',
+     ylab = 'ordered GO groups (from exon analysis)',
+     main = 'Concordance')
+for(k in 1:5){
+    abline(v = k * 200, cex = 0.5, col = 'lightgrey')
+    abline(h = k * 200, cex = 0.5, col = 'lightgrey')
+}
+lines(seq(1:length(p.mod1.sort[1:1000])), conc[1:1000], col = 'black', lwd = 2)
 ```
 
 
