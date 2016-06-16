@@ -1,7 +1,7 @@
 ---
 title: 'recount (DER analyses)'
 author: 'Kai Kammers and Shannon Ellis'
-date: 'June 09, 2016'
+date: 'June 16, 2016'
 output:
   BiocStyle::html_document:
     toc: true
@@ -46,7 +46,8 @@ bib <- read.bibtex('recount_DER_SRP032789.bib')
 names(bib) <- names(bibs)
 ```
 
-Here is an example of how to download and analyze a `RangedSummarizedExperiment` object with the gene counts with SRA study id [SRP032789](http://trace.ncbi.nlm.nih.gov/Traces/sra/?study=SRP032789). 
+Here is an example of how to download and analyze a `RangedSummarizedExperiment` object While differential expression analysis of RNA-Seq data is often done at the gene and/or exon level, there is utility in looking for differential expression using an annotation-indepenent approach. Here, without the aid of any annotation, expressed regions are summarized, filtered, and differential expression analyses are carried out. These results are compared to those from gene- and exon-level analyses carried out on the same data to assess whether additional infromation can be garnered from this approach.
+Data herein come from triple negative and HER2-positive breast cancer samples from SRA study id [SRP032789] (http://trace.ncbi.nlm.nih.gov/Traces/sra/?study=SRP032789). 
 
 We first load the required packages.
 
@@ -63,17 +64,20 @@ library('RSkittleBrewer')
 library('derfinder')
 library('BiocParallel')
 library('GenomicRanges')
+library('bumphunter')
+library('TxDb.Hsapiens.UCSC.hg38.knownGene')
 
 ## set colors 
 trop <- RSkittleBrewer('tropical')[c(1, 2)]
 ```
-
-
+Expressed region data are downloaded for each chromosome and summarized into a count matrix (covMat) where each region is a row and each sample a column.
+ 
 # Expressed regions
 ```{r er}
 chrs <- paste0('chr', c(1:22, 'X', 'Y'))
 bp <- SerialParam() ## Change if you have access to more cores
 
+## Download region level data
 if(!file.exists('regions_SRP032789.Rdata')) {
     regions_list <- bplapply(chrs, function(chr) {
         regs <- expressed_regions('SRP032789', chr, cutoff = 5L,
@@ -89,7 +93,7 @@ if(!file.exists('regions_SRP032789.Rdata')) {
     load('regions_SRP032789.Rdata')
 }
 
-## Compute coverage matrix for study SRP032789, only for chromosome 22
+## Compute coverage matrix for study SRP032789
 if(!file.exists('covMat_SRP032789.Rdata')) {
     covMat <- bplapply(chrs, function(chr) {
         coverageMatrix <- coverage_matrix('SRP032789', chr,
@@ -107,37 +111,47 @@ if(!file.exists('covMat_SRP032789.Rdata')) {
 
 ```
 
+After summarizing data across expressed regions, data are filtered to only include samples of interest (TNBC and HER2+ tumor samples, (`covMat_filt`)) and regions with greater than 5 mean read counts across samples (`counts`). 
+
+
 ```{r filter-er}
-## download phenotype data from 
+## Download phenotype data from 
 ## http://trace.ncbi.nlm.nih.gov/Traces/study/?acc=SRP032789
 pheno <- read.table('SraRunTable_SRP032789.txt', sep = '\t', 
     header=TRUE,
     stringsAsFactors = FALSE)
 
-## check ordering of samples
+## Check ordering of samples
 pheno <- pheno[pheno$Run_s %in% colnames(covMat), ]
 identical(pheno$Run_s, colnames(covMat))
 
-## obain correct order for pheno data
+## Obtain correct order for pheno data
 pheno <- pheno[match(colnames(covMat), pheno$Run_s), ]
 identical(pheno$Run_s, colnames(covMat))
 head(cbind(pheno$Run_s, colnames(covMat)))
 
-## find grouping information
+## Find tumor type information
 group <- pheno$tumor_type_s
 table(group)   
     
-## subset data to HER2 and TNBC type
+## Subset data to HER2 and TNBC type
 covMat_filt <- covMat[, group %in% c('HER2 Positive Breast Tumor', 'TNBC Breast Tumor')]
 group <- group[group %in% c('HER2 Positive Breast Tumor', 'TNBC Breast Tumor')] 
 dim(covMat_filt)
+rownames(covMat_filt) <- rownames(regions)
 
-## filter count matrix
+## Filter count matrix
 counts <- covMat_filt
 filter <- apply(counts, 1, function(x) mean(x) > 5)
 counts <- counts[filter, ]
 dim(counts)
+
+## Get chromosome and position information for regions included after filtering
+regions_counts <- regions[filter,]
 ```
+
+Differential expression analysis is carried out at the expressed-region level using `voom`
+and `limma`. Results for each region are plotted using a volcano plot of the $log_2(fold change)$ and $-log_10(p-value)$.
 
 
 ```{r voom-er, fig.height = 8, fig.width = 8}
@@ -152,6 +166,13 @@ fit <- eBayes(fit)
 log2FC <- fit$coefficients[, 2]
 p.mod <- fit$p.value[, 2]
 q.mod <- qvalue(p.mod)$q
+res.regions <- data.frame(log2FC, p.mod, q.mod)
+sum(res.regions$q.mod < 0.05)
+
+## Add differential expression information to GRanges object containing information about where the expressed regions are located in the genome (regions_counts)
+regions_counts$log2FC <- res.regions$log2FC
+regions_counts$p.mod <- res.regions$p.mod
+regions_counts$q.mod <- res.regions$q.mod
 
 ## Volcano plot
 par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
@@ -166,8 +187,145 @@ abline(h = seq(0, 23, 1), col = 'lightgray', lty = 'dotted')
 points(log2FC, -log10(p.mod), pch = 19, col = trop[2])
 title('Volcano plot: TNBC vs. HER2+ in SRP032789 (er level)')
 ```
+# Annotate regions with genomic information
 
+After detecting regions differentially expressed between TNBC and HER2-positive samples, we can annotate where in the genome these regions are found and compare them back to the results from the gene- and exon-level differential expression analyses to determine what new information is gained by utilziing expressed region level data.
 
+```{r annotation-er}
+
+## Obtain significant (q<0.05) regions
+regions_counts_sig <- regions_counts[regions_counts$q.mod < 0.05,]
+
+## Identify the top regions by highest total coverage
+top <- regions_counts_sig[order(regions_counts_sig$area, decreasing = TRUE),1:100]
+
+## Annotate significant regions
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+genes <- annotateTranscripts(txdb)
+## Warning: This can take some time -- dependent upon how many regions are included for annotation
+annotation_der <- matchGenes(regions_counts_sig,genes)
+
+## Merge DER information with annotation information
+regions_annotated <- cbind(regions_counts_sig,annotation_der)
+
+```
+
+# Gene level analysis
+In order to compare these differentially expressed regions with gene-level results, we must carry out differential expression in these same data at the gene level.
+
+We first download the project of interest (SRP032798), obtaining expression data for the study of interest.
+
+```
+
+{r download-genes}
+## Find the project of interest (SRP032789), e.g. with parts of the abstract
+project_info <- abstract_search('To define the digital transcriptome of three breast cancer')
+
+## Download the gene-level RangedSummarizedExperiment data
+if(!file.exists(file.path('SRP032789', 'rse_gene.Rdata'))) {
+    download_study(project_info$project)
+}
+
+## Load the data
+load(file.path(project_info$project, 'rse_gene.Rdata'))
+rse_gene
+```
+
+Downloaded count data are first scaled to take into account differing coverage between samples. Phenotype data (`pheno`) are obtained and ordered to match the sample order of the gene expression data (`rse_gene`). Only those samples that are HER2-positive or TNBC are included for analysis. Prior to differential gene expression analysis, count data are obtained in matrix format and then filtered to only include those genes with greater than five average normalized counts across all samples.
+
+```{r filter-genes}
+## Scale counts by taking into account the total coverage per sample
+rse <- scale_counts(rse_gene)
+
+## Download additional phenotype data from 
+## http://trace.ncbi.nlm.nih.gov/Traces/study/?acc=SRP032789
+pheno <- read.table('SraRunTable_SRP032789.txt', sep = '\t', 
+    header = TRUE,
+    stringsAsFactors = FALSE)
+
+## Obtain correct order for pheno data
+pheno <- pheno[match(rse$run, pheno$Run_s), ]
+identical(pheno$Run_s, rse$run)
+head(cbind(pheno$Run_s, rse$run))
+
+## Obtain grouping information
+colData(rse)$group <- pheno$tumor_type_s
+table(colData(rse)$group)   
+    
+## Subset data to HER2 and TNBC types
+rse <- rse[, rse$group %in% c('HER2 Positive Breast Tumor',
+    'TNBC Breast Tumor')]
+rse 
+
+## Obtain count matrix
+counts <- assays(rse)$counts
+
+## Filter count matrix
+filter <- apply(counts, 1, function(x) mean(x) > 5)
+counts <- counts[filter, ]
+dim(counts)
+counts_genes <- counts
+```
+
+Using `limma` and `voom`, differentially expressed genes are detected at the gene level.
+
+```{r voom-genes, fig.height = 8, fig.width = 8}
+## Perform differential expression analysis with limma-voom
+design <- model.matrix(~ rse$group)
+design
+
+dge <- DGEList(counts = counts)
+dge <- calcNormFactors(dge)
+v <- voom(dge, design, plot = TRUE)
+fit <- lmFit(v, design)
+fit <- eBayes(fit)
+log2FC <- fit$coefficients[, 2]
+p.mod <- fit$p.value[, 2]
+q.mod <- qvalue(p.mod)$q
+res.genes <- data.frame(log2FC, p.mod, q.mod)
+rownames(res.genes) <- rownames(counts)
+sum(res.genes$q.mod < 0.05)
+```
+
+# Determine DERs not detected by gene level analysis
+
+By avoiding using gene or exon-level annotation for quantification, regions usually excluded from analysis can be included. Here, the same data set is utilized for differential expression; however, we determine the number of signficantly differentially expressed regions (DERs, q<0.05) that do not overlap any gene. These regions are places within the genome that would be completely missed by the common gene-level analyses. 
+
+```{r DERs-undetected, fig.height = 8, fig.width = 8}}
+
+## Get DEGs into GRanges object format
+genes_GRanges <- SummarizedExperiment::rowRanges(rse_gene[filter,])
+genes_GRanges$log2FC <- res.genes$log2FC
+genes_GRanges$p.mod <- res.genes$p.mod
+genes_GRanges$q.mod <- res.genes$q.mod
+
+## For reach region, determine if region overlaps with a gene
+overlap <-countOverlaps(regions_counts_sig,genes_GRanges,type="any")
+overlap <-countOverlaps(regions_counts,genes_GRanges,type="any")
+
+regions_counts$overlap <- overlap
+regions_counts_ingene <- regions_counts[overlap>0]
+regions_counts_notingene <- regions_counts[overlap==0]
+
+## For significant DERs (q<0.05), how many sites do not fall within a gene (and thus would not be detected by gene-level analyses
+ 
+## number of DERs that do not overlap with any genes
+length(regions_counts_notingene[regions_counts_notingene$q.mod<0.05])
+
+## Volcano plot of DERs (that do not overlap with genes)
+par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
+rx2 <- c(-1, 1) * 1.1 * max(abs(log2FC))
+ry2 <- c(-0.1, max(-log10(p.mod))) * 1.1
+plot(log2FC, -log10(p.mod), 
+     pch = 19, xlim = rx2, ylim = ry2, col = trop[2],
+     xlab = bquote(paste(log[2], ' (fold change)')), 
+     ylab = bquote(paste(-log[10], ' (p-value)')))
+abline(v = seq(-10, 10, 1), col = 'lightgray', lty = 'dotted')
+abline(h = seq(0, 23, 1), col = 'lightgray', lty = 'dotted')
+points(regions_counts_notingene$log2FC, -log10(regions_counts_notingene$p.mod), pch = 19, col = trop[2])
+title('Volcano plot: TNBC vs. HER2+ in SRP032789 (DERs not in genes)')
+
+```
 
 # Reproducibility
 
