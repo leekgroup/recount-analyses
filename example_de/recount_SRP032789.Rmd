@@ -1,7 +1,7 @@
 ---
 title: 'recount (gene and exon analyses)'
 author: 'Kai Kammers and Shannon Ellis'
-date: 'June 15, 2016'
+date: 'June 21, 2016'
 output:
   BiocStyle::html_document:
     toc: true
@@ -47,7 +47,7 @@ names(bib) <- names(bibs)
 ```
 
 
-Included is an example of how to download and analyze expression data from SRA study [SRP032798](http://trace.ncbi.nlm.nih.gov/Traces/sra/?study=SRP032798). The data come from human breast cancer samples, and we compare the transcriptomes of triple negative breast cancer (TNBC) and HER2-positive breast cancer samples. Code here demonstrates how to carry out differential gene, exon, expressed region, and exon-exon junction analyses within a single study using `limma` and `voom`. We test for concordance among the results of each analysis and demonstrate how to carry out gene ontology analysis using `topGO` to characterize top hits from differential expression analyses.
+Included is an example of how to download and analyze expression data from SRA study [SRP032798](http://trace.ncbi.nlm.nih.gov/Traces/sra/?study=SRP032798). The data come from human breast cancer samples, and we compare the transcriptomes of TNBC samples (triple negative breast cancer) and HER2-positive breast cancer samples (breast cancer type that tests positive for a protein called human epidermal growth factor receptor 2). Code here demonstrates how to carry out differential expression analyses on gene and exon levels within a single study using `limma` and `voom`. We test for concordance among the results of each analysis and demonstrate how to carry out gene ontology analysis using `topGO` to characterize top hits from differential expression analyses.
 
 We first load the required packages.
 
@@ -67,7 +67,6 @@ library('derfinder')
 
 
 # Gene level analysis
-
 We first download the project of interest (SRP032798), obtaining expression data for the study of interest. We obtain summaries of the number of samples and genes included using `colData()` and `rowData()`, respectively.
 
 ```{r download-genes}
@@ -163,7 +162,7 @@ legend('topright', pch = 19, col = trop[c(1, 2)],
        names(summary(as.factor(rse$group))))
 ```
 
-Having determined there are no sample outliers in these data, we carry out differential gene expression analysis. Differential gene expression between TNBC and HER2-positive samples are determined using `limma` and `voom`. Differentially expressed genes are visualized using a volcano plot to compare the effect size of the differential expression [ as measured by the $log_2(fold change)$ in expression ] and its significance [ $-log_10(p-value)$ ].
+Having determined there are no sample outliers in these data, we carry out differential gene expression analysis. Differential gene expression between TNBC and HER2-positive samples are determined using `limma` and `voom`. Differentially expressed genes are visualized using a volcano plot to compare the effect size of the differential expression [ as measured by the $log_2(fold \. change)$ in expression ] and its significance [ $-log_10(p-value)$ ].
 
 ```{r voom-genes, fig.height = 8, fig.width = 8}
 ## Perform differential expression analysis with limma-voom
@@ -206,7 +205,6 @@ title('Volcano plot: TNBC vs. HER2+ in SRP032789 (gene level)')
 
 
 # Gene set analysis
-
 To get a better understanding of those genes showing differential gene expression, we utilize `topGO`, a gene set analysis library. Genes included in this analysis are those reaching a q-value cutoff less than 0.05. 
 
 ```{r topgo-prep} 
@@ -233,7 +231,7 @@ head(bpres_gene, n = 10)
 
 # Exon level analysis
 
-As above, we're interested here in differential expression. However, rather than summarizing across genes, this analysis will look for differential expression at the exon level. In this analysis, we include all exons that map to the previous filtered genes and again carry out differential expression analysis  using `limma` and `voom`.
+As above, we are interested here in differential expression. However, rather than summarizing across genes, this analysis will look for differential expression at the exon level. In this analysis, we include all exons that map to the previous filtered genes and again carry out differential expression analysis  using `limma` and `voom`.
 
 Here, we download data from the same project as above (SRP032798); however, this time, we are interested in obtaining the exon-level data.
 
@@ -327,7 +325,7 @@ legend('topright', pch = 19, col = trop[c(1, 2)],
        names(summary(as.factor(rse$group))))
 ```
 
-Again, differential expression analysis is carried out using `limma` and `voom`; however, this time at the exon, rather than gene, level. Data are again visualized using a volcano plot to assess the strength [ $log_2(fold change)$ ] and statistical significance [ $-log_10(p-value)$ ] for each exon.
+Again, differential expression analysis is carried out using `limma` and `voom`; however, this time at the exon, rather than gene, level. Data are again visualized using a volcano plot to assess the strength [ $log_2(fold \. change)$ in expression ] and its significance [ $-log_10(p-value)$ ].for each exon.
 
 ```{r voom-exons, fig.height = 8, fig.width = 8}
 design <- model.matrix(~ rse$group)
@@ -402,6 +400,8 @@ head(bpres_exon, n = 10)
 ```
 
 To determine the concordance between the gene- and exon-level analyses, the top hits (as determined by p-value) are compared. Results are plotted such that the points falling along the identity line would indicate complete agreement between the top hits of each analysis. 
+
+
 
 # Concordance (genes)
 

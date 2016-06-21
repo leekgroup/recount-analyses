@@ -1,7 +1,7 @@
 ---
 title: 'recount (DER analyses)'
 author: 'Kai Kammers and Shannon Ellis'
-date: 'June 20, 2016'
+date: 'June 21, 2016'
 output:
   BiocStyle::html_document:
     toc: true
@@ -152,7 +152,7 @@ regions_counts <- regions[filter, ]
 ```
 
 Differential expression analysis is carried out at the expressed-region level using `voom`
-and `limma`. Results for each region are plotted using a volcano plot of the $log_2(fold change)$ and $-log_10(p-value)$.
+and `limma`. Results for each region are plotted using a volcano plot of the $log_2(fold change)$ and $-log_{10}(p-value)$.
 
 
 ```{r voom-er, fig.height = 8, fig.width = 8}
@@ -205,7 +205,8 @@ top <- regions_counts_sig[order(regions_counts_sig$area, decreasing = TRUE)[1:10
 
 ## Annotate significant regions
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
-genes <- annotateTranscripts(txdb)
+genes <- annotateTranscripts(TxDb.Hsapiens.UCSC.hg38.knownGene, 
+                             annotation="org.Hs.eg.db")
 
 ## Match detected regions with known gene annotation
 ## Warning: This can take some time
@@ -295,8 +296,9 @@ rownames(res.genes) <- rownames(counts)
 sum(res.genes$q.mod < 0.05)
 ```
 
-# Determine DERs not detected by gene level analysis
 
+
+# Determine DERs not detected by gene level analysis
 By avoiding using gene or exon-level annotation for quantification, regions usually excluded from analysis can be included. Here, the same data set is utilized for differential expression; however, we determine the number of signficantly differentially expressed regions (DERs, q<0.05) that do not overlap any gene. These regions are places within the genome that would be completely missed by the common gene-level analyses. 
 
 ```{r DERs-undetected, fig.height = 8, fig.width = 8}
@@ -335,8 +337,7 @@ title('Volcano plot: TNBC vs. HER2+ in SRP032789 (DERs not in genes)')
 ```
 
 
-There are `length(regions_counts_notingene[regions_counts_notingene$q.mod<0.05])` DERs that do not overlap with genes.
-
+There are `length(regions_counts_notingene[regions_counts_notingene$q.mod<0.05])` DERs that do not overlap with known genes.
 
 
 
