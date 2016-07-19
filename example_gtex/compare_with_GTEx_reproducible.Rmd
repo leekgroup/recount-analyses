@@ -171,7 +171,7 @@ save(gtexCounts, gtexMap, gtexPd, recountCounts, recountMap, file =
 # Comparison
 
 ```{r loadMap}
-load("GTEx_websiteAndRecount_EntrezMatched_17559_vs_8551.Rdata")
+load("GTEx_websiteAndRecount_EntrezMatched_17559_vs_8551_reproduced.Rdata")
 gtexCounts <- as.matrix(gtexCounts)
 ```
 
