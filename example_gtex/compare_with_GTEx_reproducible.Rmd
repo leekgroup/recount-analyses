@@ -184,13 +184,13 @@ sum(rawCors <= 0.80, na.rm = TRUE)
 mean(rawCors >= 0.99, na.rm = TRUE)
 ```
 
-```{r rawCountsPlot, plot=TRUE}
+```{r rawCountsPlot, plot = TRUE}
 pdf(file = "rawCorrelations.pdf")
 dens <- density(rawCors, from = -1, to = 1, na.rm = TRUE, n = 4096)
 plot(dens, xlab = "Pearson correlation", main = "Raw counts")
 plot(dens, xlab = "Pearson correlation",
      main = "Raw counts", xlim = c(0.9,1))
- dev.off()
+dev.off()
 ```
 
 ```{r normCounts}
@@ -203,7 +203,7 @@ normCors <- sapply(seq_len(nrow(gtexCounts2)), function(ii)
 summary(normCors)
 ```
 
-```{r normCountsPlot, plot=TRUE}
+```{r normCountsPlot, plot = TRUE}
 pdf(file = "normCors.pdf")
 plot(density(normCors, from = -1, to = 1, na.rm = TRUE),
      xlab = "Pearson correlation", main = "Gene counts, normalized for library size")
@@ -214,7 +214,7 @@ dev.off()
 
 Between colon and blood
 
-```{r}
+```{r 'incomplete', eval = FALSE}
 gtex_metadata <- all_metadata("gtex")
 gtex_metadata2 <- subset(gtex_metadata, smtsd %in% c("Whole Blood", "Colon"))[, c("run", "smtsd", "smgebtch")]
 colnames(gtex_metadata2)[c(2,3)] <- c("tissue", "batch")
