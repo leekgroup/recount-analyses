@@ -1,7 +1,48 @@
 ---
 author: "Andrew E. Jaffe and Kasper D. Hansen"
 title: Comparison of Recount with GTEx"
+date: 'July 18, 2016'
+output:
+  BiocStyle::html_document:
+    toc: true
+  pdf_document:
+    toc: true
 ---
+
+```{r 'setup', echo = FALSE, warning = FALSE, message = FALSE}
+timestart <- Sys.time()
+
+## Bib setup
+library('knitcitations')
+
+## Load knitcitations with a clean bibliography
+cleanbib()
+cite_options(hyperlink = 'to.doc', citation_format = 'text', style = 'html')
+
+## Write bibliography information
+bibs <- c(
+    ballgown = citation('ballgown'),
+    BiocStyle = citation('BiocStyle'),
+    coop = citation('coop'),
+    devtools = citation('devtools'),
+    knitcitations = citation('knitcitations'),
+    'org.Hs.eg.db' = citation('org.Hs.eg.db'),
+    R = citation(),
+    readr = citation('readr'),
+    recount = citation('recount'),
+    rmarkdown = citation('rmarkdown'),
+    rtracklayer = citation('rtracklayer'),
+    stringr = citation('stringr'),
+    SummarizedExperiment = citation('SummarizedExperiment')
+)
+
+write.bibtex(bibs,
+    file = 'gtex_analysis.bib')
+bib <- read.bibtex('gtex_analysis.bib')
+
+## Assign short names
+names(bib) <- names(bibs)
+```
 
 # Overview
 
@@ -15,14 +56,14 @@ This document compares GTEx data release v6 to Recount.  The main issue addresse
 ## R packages
 
 ```{r dependencies}
-library(SummarizedExperiment)
-library(stringr)
-library(recount)
-library(rtracklayer)
-library(org.Hs.eg.db)
-library(ballgown)
-library(coop)
-library(readr)
+library('ballgown')
+library('coop')
+library('org.Hs.eg.db')
+library('readr')
+library('recount')
+library('rtracklayer')
+library('stringr')
+library('SummarizedExperiment')
 ```
 
 ## Data objects
@@ -34,10 +75,11 @@ library(readr)
 We have downloaded the annotation GTF files as well as the raw gene count matrix from the [GTEx portal](http://www.gtexportal.org).
 
 ```{r gtexWebsite}
-dataPath="/dcs01/ajaffe/GTEX/V6/" # wherever data was downloaded
-gtexGtf <- import(paste0(dataPath,"/gencode.v19.genes.patched_contigs.gtf"))
-gtexData <- read_tsv(paste0(dataPath,"GTEx_Analysis_v6_RNA-seq_RNA-SeQCv1.1.8_gene_reads.gct.gz"), skip=2)
-gtexCounts <- gtexData[,3:ncol(gtexData)]
+dataPath <- "/dcs01/ajaffe/GTEX/V6" # wherever data was downloaded
+gtexGtf <- import(file.path(dataPath, "gencode.v19.genes.patched_contigs.gtf"))
+gtexData <- read_tsv(file.path(dataPath,
+    "GTEx_Analysis_v6_RNA-seq_RNA-SeQCv1.1.8_gene_reads.gct.gz"), skip=2)
+gtexCounts <- gtexData[, 3:ncol(gtexData)]
 rownames(gtexCounts) <- gtexData$Name
 ```
 
@@ -46,17 +88,22 @@ rownames(gtexCounts) <- gtexData$Name
 These are the the Rail-RNA processed samples
 
 ```{r loadObjectsRecount}
+# For when the data is available via recount:
+## download_study('SRP012682')
+## load('SRP012682/rse_gene.Rdata')
+
+# Will remove this line in the future and uncomment the above
 load("/dcl01/leek/data/recount-website/rse/rse_gtex/SRP012682/rse_gene.Rdata")
-gtexPd = colData(rse_gene)
+gtexPd <- colData(rse_gene)
 ```
 
 Let's match everything up.
 
 ```{r matchIDs}
-mm = match(colnames(gtexCounts), gtexPd$sampid)
-gtexCounts = gtexCounts[,!is.na(mm)]
-gtexPd = gtexPd[mm[!is.na(mm)],]
-rse_gene = rse_gene[,mm[!is.na(mm)]]
+mm <- match(colnames(gtexCounts), gtexPd$sampid)
+gtexCounts <- gtexCounts[,!is.na(mm)]
+gtexPd <- gtexPd[mm[!is.na(mm)],]
+rse_gene <- rse_gene[,mm[!is.na(mm)]]
 ```
 
 # Mapping GTEx annotation
@@ -69,18 +116,19 @@ names(gtexMap) <- gtexMap$gene_id
 gtexMap <- gtexMap[rownames(gtexCounts)]
 stopifnot(all(rownames(gtexMap) == rownames(gtexCounts)))
 gtexMap$EnsemblGeneID <- ballgown:::ss(gtexMap$gene_id, "\\.")
-eid2ens = select(org.Hs.eg.db,gtexMap$EnsemblGeneID,
-                "ENTREZID", "ENSEMBL")
-eid2ens = CharacterList(split(eid2ens$ENTREZID, eid2ens$ENSEMBL))
-gtexMap$EntrezID = eid2ens[gtexMap$EnsemblGeneID]
+eid2ens <- select(org.Hs.eg.db, gtexMap$EnsemblGeneID,
+    "ENTREZID", "ENSEMBL")
+eid2ens <- CharacterList(split(eid2ens$ENTREZID, eid2ens$ENSEMBL))
+gtexMap$EntrezID <- eid2ens[gtexMap$EnsemblGeneID]
 table(elementLengths(gtexMap$EntrezID))
-table(gtexMap$gene_type,elementLengths(gtexMap$EntrezID) == 1)
+table(gtexMap$gene_type, elementLengths(gtexMap$EntrezID) == 1)
 ```
 
 Basically, only protein coding genes have a ENTREZ id.  We keep only the protein coding genes which are uniquely mapped to an ENTREZ id.
 
 ```{r keepMapping}
-eidIndex <- which(elementLengths(gtexMap$EntrezID)==1 & gtexMap$gene_type == "protein_coding")
+eidIndex <- which(elementLengths(gtexMap$EntrezID)==1 &
+    gtexMap$gene_type == "protein_coding")
 gtexMap <- gtexMap[eidIndex,]
 gtexCounts <- gtexCounts[eidIndex,]
 gtexMap$EntrezID <- sapply(gtexMap$EntrezID,"[", 1)
@@ -91,8 +139,8 @@ Now, we still have multiple Ensembl gene ids mapping to the same ENTREZ id.  We 
 ```{r dropMultiEntrez}
 dropIDs <- gtexMap$EntrezID[duplicated(gtexMap$EntrezID)]
 keepIdx <- which(!gtexMap$EntrezID %in% dropIDs)
-gtexCounts <- gtexCounts[keepIdx,]
-gtexMap <- gtexMap[keepIdx,]
+gtexCounts <- gtexCounts[keepIdx, ]
+gtexMap <- gtexMap[keepIdx, ]
 rownames(gtexCounts) <- names(gtexMap) <- gtexMap$EntrezID
 dim(gtexCounts)
 ```
@@ -102,37 +150,37 @@ Let's load data from Recount.
 
 ```{r}
 rse_gene_scale <- scale_counts(rse_gene)
-recountCounts = assays(rse_gene_scale)$counts
-recountMap = rowRanges(rse_gene_scale)
+recountCounts <- assays(rse_gene_scale)$counts
+recountMap <- rowRanges(rse_gene_scale)
 stopifnot(all(colnames(recountCounts) == rownames(gtexPd)))
 
 ## match by gene
-geneMatch = match(recountMap$gene_id, gtexMap$EntrezID )
-recountCounts = recountCounts[!is.na(geneMatch),]
-recountMap = recountMap[!is.na(geneMatch)]
+geneMatch <- match(recountMap$gene_id, gtexMap$EntrezID )
+recountCounts <- recountCounts[!is.na(geneMatch), ]
+recountMap <- recountMap[!is.na(geneMatch)]
 
-gtexMap = gtexMap[geneMatch[!is.na(geneMatch)],]
-gtexCounts = gtexCounts[geneMatch[!is.na(geneMatch)],]
-stopifnot(all(rownames(gtexCounts)== rownames(recountCounts)))
+gtexMap <- gtexMap[geneMatch[!is.na(geneMatch)], ]
+gtexCounts <- gtexCounts[geneMatch[!is.na(geneMatch)], ]
+stopifnot(all(rownames(gtexCounts) == rownames(recountCounts)))
 
-save(gtexCounts, gtexMap, gtexPd, 
-     recountCounts, recountMap,
-     file = "/dcl01/leek/data/recount-website/GTEx_checks/GTEx_websiteAndRecount_EntrezMatched_17559_vs_8551_reproduced.rda",
-     compress=TRUE)
+save(gtexCounts, gtexMap, gtexPd, recountCounts, recountMap, file =
+    "GTEx_websiteAndRecount_EntrezMatched_17559_vs_8551_reproduced.Rdata",
+    compress = TRUE)
 ```
 
 # Comparison
 
 ```{r loadMap}
-load("/dcl01/leek/data/recount-website/GTEx_checks/GTEx_websiteAndRecount_EntrezMatched_17559_vs_8551.rda")
+load("GTEx_websiteAndRecount_EntrezMatched_17559_vs_8551.Rdata")
 gtexCounts <- as.matrix(gtexCounts)
 ```
 
 ```{r rawCounts comparisons}
-rawCors <- sapply(1:nrow(gtexCounts), function(ii) pcor(gtexCounts[ii,], recountCounts[ii,]))
+rawCors <- sapply(seq_len(nrow(gtexCounts)), function(ii) pcor(gtexCounts[ii, ],
+    recountCounts[ii,]))
 summary(rawCors)
-sum(rawCors<=0.95, na.rm = TRUE)
-sum(rawCors<=0.80, na.rm = TRUE)
+sum(rawCors <= 0.95, na.rm = TRUE)
+sum(rawCors <= 0.80, na.rm = TRUE)
 mean(rawCors >= 0.99, na.rm = TRUE)
 ```
 
@@ -142,12 +190,16 @@ dens <- density(rawCors, from = -1, to = 1, na.rm = TRUE, n = 4096)
 plot(dens, xlab = "Pearson correlation", main = "Raw counts")
 plot(dens, xlab = "Pearson correlation",
      main = "Raw counts", xlim = c(0.9,1))
+ dev.off()
 ```
 
 ```{r normCounts}
-gtexCounts2 <- log2(sweep(gtexCounts, MARGIN = 2, FUN = "/", colSums(gtexCounts)/(4*10^7)) + 1)
-recountCounts2 <- log2(assay(rse_gene2, "counts")[rownames(recountCounts), colnames(recountCounts)] + 1)
-normCors <- sapply(1:nrow(gtexCounts2), function(ii) pcor(gtexCounts2[ii,], recountCounts2[ii,]))
+gtexCounts2 <- log2(sweep(gtexCounts, MARGIN = 2, FUN = "/", 
+    colSums(gtexCounts) / (4 * 10^7 )) + 1)
+recountCounts2 <- log2(assay(rse_gene2, "counts")[rownames(recountCounts),
+    colnames(recountCounts)] + 1)
+normCors <- sapply(seq_len(nrow(gtexCounts2)), function(ii) 
+    pcor(gtexCounts2[ii, ], recountCounts2[ii, ]))
 summary(normCors)
 ```
 
@@ -182,4 +234,44 @@ v <- gtex <- voom(dge <- gtex,design <- gtex,plot=TRUE)
 fit <- gtex <- lmFit(v <- gtex,design <- gtex)
 fit <- gtex <- eBayes(fit <- gtex)
 hist(fit <- gtex$p.value[,2],col=trop[2],main="DE",breaks=100)
+```
+
+# Reproducibility
+
+
+This analysis report was made possible thanks to:
+
+* R `r citep(bib[['R']])`
+* `r Biocpkg('ballgown')` `r citep(bib[['ballgown']])`
+* `r Biocpkg('BiocStyle')` `r citep(bib[['BiocStyle']])`
+* `r CRANpkg('coop')` `r citep(bib[['coop']])`
+* `r CRANpkg('devtools')` `r citep(bib[['devtools']])`
+* `r CRANpkg('knitcitations')` `r citep(bib[['knitcitations']])`
+* `r Biocpkg('org.Hs.eg.db')` `r citep(bib[['org.Hs.eg.db']])`
+* `r CRANpkg('readr')` `r citep(bib[['readr']])`
+* `r Githubpkg('leekgroup/recount')` `r citep(bib[['recount']])`
+* `r CRANpkg('rmarkdown')` `r citep(bib[['rmarkdown']])`
+* `r Biocpkg('rtracklayer')` `r citep(bib[['rtracklayer']])`
+* `r CRANpkg('stringr')` `r citep(bib[['stringr']])`
+* `r Biocpkg('SummarizedExperiment')` `r citep(bib[['SummarizedExperiment']])`
+
+
+[Bibliography file](gtex_analysis.bib)
+
+```{r bibliography, results='asis', echo=FALSE, warning = FALSE}
+## Print bibliography
+bibliography()
+```
+
+
+```{r reproducibility}
+## Time spent creating this report:
+diff(c(timestart, Sys.time()))
+
+## Date this report was generated
+message(Sys.time())
+
+## Reproducibility info
+options(width = 120)
+devtools::session_info()
 ```
