@@ -1,7 +1,7 @@
 ## Install all dependencies if needed
 
 source("https://bioconductor.org/biocLite.R")
-useDevel(TRUE) ## recount requires the devel version of rtracklayer (>= 1.33.3)
+useDevel(TRUE) ## recount requires the devel version of rtracklayer (>= 1.33.10)
 
 ## Bioconductor or CRAN packages
 biocLite(c('ballgown', 'BiocParallel', 'BiocStyle', 'coop', 'derfinder', 'devtools', 'dplyr', 'edgeR', 'ffpe', 'GenomicRanges', 'IHW', 'knitcitations', 'limma', 'magrittr', 'matrixStats', 'org.Hs.eg.db', 'qvalue', 'readr', 'rmarkdown', 'stringr', 'SummarizedExperiment', 'topGO'))

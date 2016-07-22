@@ -12,7 +12,7 @@ Example analyses with the [recount](https://github.com/leekgroup/recount) R pack
 * [Differential expression at the gene and exon levels](example_de/recount_SRP032789.html) ([PDF](example_de/recount_SRP032789.pdf))
 * [Annotation-agnostic differential expression](example_de/recount_DER_SRP032789.html) ([PDF](example_de/recount_DER_SRP032789.pdf))
 * [Concordance across studies at the gene level](example_de/recount_SRP019936.html) ([PDF](example_de/recount_SRP019936.pdf))
-* [GTEx counts comparison](example_gtex/compare_with_GTEx.html) ([PDF](example_gtex/compare_with_GTEx.pdf))
+* [GTEx counts comparison](example_gtex/compare_with_GTEx_reproducible.html) ([PDF](example_gtex/compare_with_GTEx_reproducible.pdf))
 
 
 # References
@@ -31,7 +31,7 @@ bibs <- c(
     ballgown = citation('ballgown'),
     BiocParallel = citation('BiocParallel'),
     BiocStyle = citation('BiocStyle'),
-    coop = citation('coop'),
+    coop = citation('coop')[1],
     derfinder = citation('derfinder')[1],
     devtools = citation('devtools'),
     dplyr = citation('dplyr'),
@@ -45,6 +45,7 @@ bibs <- c(
     qvalue = citation('qvalue'),
     R = citation(),
     recount = citation('recount'),
+    readr = citation('readr'),
     rmarkdown = citation('rmarkdown'),
     RSkittleBrewer = citation('RSkittleBrewer'),
     stringr = citation('stringr'),
@@ -79,6 +80,7 @@ The analyses were made possible thanks to:
 * `r Biocpkg('org.Hs.eg.db')` `r citep(bib[['org.Hs.eg.db']])`
 * `r Biocpkg('qvalue')` `r citep(bib[['qvalue']])`
 * `r Githubpkg('leekgroup/recount')` `r citep(bib[['recount']])`
+* `r CRANpkg('readr')` `r citep(bib[['readr']])`
 * `r CRANpkg('rmarkdown')` `r citep(bib[['rmarkdown']])`
 * `r Githubpkg('alyssafrazee/RSkittleBrewer')` `r citep(bib[['RSkittleBrewer']])`
 * `r CRANpkg('stringr')` `r citep(bib[['stringr']])`

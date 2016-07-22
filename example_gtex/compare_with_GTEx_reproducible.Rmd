@@ -30,7 +30,7 @@ cite_options(hyperlink = 'to.doc', citation_format = 'text', style = 'html')
 bibs <- c(
     ballgown = citation('ballgown'),
     BiocStyle = citation('BiocStyle'),
-    coop = citation('coop'),
+    coop = citation('coop')[1],
     devtools = citation('devtools'),
     edgeR = citation('edgeR')[2],
     knitcitations = citation('knitcitations'),
