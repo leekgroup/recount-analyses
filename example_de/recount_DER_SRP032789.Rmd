@@ -1,7 +1,7 @@
 ---
 title: 'recount (DER analyses)'
 author: 'Kai Kammers and Shannon Ellis'
-date: 'June 21, 2016'
+date: 'July 22, 2016'
 output:
   BiocStyle::html_document:
     toc: true
@@ -204,20 +204,19 @@ After detecting regions differentially expressed between TNBC and HER2+ samples,
 regions_counts_sig <- regions_counts[regions_counts$q.mod < 0.05, ]
 
 ## Identify the top regions by highest total coverage
-top <- regions_counts_sig[order(regions_counts_sig$area, decreasing = TRUE)[1:100], ]
+# top <- regions_counts_sig[order(regions_counts_sig$area, decreasing = TRUE)[1:100], ]
 
 ## Annotate significant regions
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
-genes <- annotateTranscripts(TxDb.Hsapiens.UCSC.hg38.knownGene, 
-                             annotation="org.Hs.eg.db")
+genes <- annotateTranscripts(TxDb.Hsapiens.UCSC.hg38.knownGene, annotation="org.Hs.eg.db")
 
 ## Match detected regions with known gene annotation
 ## Warning: This can take some time
 ## (dependent upon how many regions are included for annotation)
-annotation_der <- matchGenes(regions_counts_sig, genes)
+# annotation_der <- matchGenes(regions_counts_sig, genes)
 
 ## Merge DER information with annotation information
-regions_annotated <- cbind(regions_counts_sig, annotation_der)
+# regions_annotated <- cbind(regions_counts_sig, annotation_der)
 ```
 
 There are `r length(regions_counts_sig)` statistically significant regions detected (`q < 0.05`). We can use a venn diagram to visually represent where they are found in the genome.
@@ -226,8 +225,7 @@ There are `r length(regions_counts_sig)` statistically significant regions detec
 
 ## Get Annotation
 ## Genomic state created by https://github.com/nellore/runs/blob/master/gtex/DER_analysis/coverageMatrix/genomicState/hg38-genomicState.R
-#### Leo! NEED to change this? ####
-load('/dcl01/leek/data/gtex_work/runs/gtex/DER_analysis/coverageMatrix/genomicState/genomicState.Hsapiens.BioMart.ENSEMBLMARTENSEMBL.GRCh38.p5.Rdata')
+load('genomicState.Hsapiens.BioMart.ENSEMBLMARTENSEMBL.GRCh38.p5.Rdata')
 gs_raw <- genomicState.Hsapiens.BioMart.ENSEMBLMARTENSEMBL.GRCh38.p5$fullGenome
 gs <- renameSeqlevels(gs_raw, paste0('chr', seqlevels(gs_raw)))
 gs_exons <- gs[gs$theRegion =="exon"]
