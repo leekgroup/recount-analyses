@@ -9,6 +9,13 @@ output:
     toc: true
 ---
 
+```{r docSetup, dev = 'CairoPNG', echo = FALSE}
+## Set device option
+library('knitr')
+opts_chunk$set(dev = 'CairoPNG')
+```
+
+
 ```{r 'setup', echo = FALSE, warning = FALSE, message = FALSE}
 timestart <- Sys.time()
 
