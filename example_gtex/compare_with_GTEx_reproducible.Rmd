@@ -80,7 +80,8 @@ We have downloaded the annotation GTF files as well as the raw gene count matrix
 dataPath <- "/dcs01/ajaffe/GTEX/V6" # wherever data was downloaded
 gtexGtf <- import(file.path(dataPath, "gencode.v19.genes.patched_contigs.gtf"))
 gtexData <- read_tsv(file.path(dataPath,
-    "GTEx_Analysis_v6_RNA-seq_RNA-SeQCv1.1.8_gene_reads.gct.gz"), skip=2)
+    "GTEx_Analysis_v6_RNA-seq_RNA-SeQCv1.1.8_gene_reads.gct.gz"),
+		skip=2, progress=FALSE)
 gtexCounts <- gtexData[, 3:ncol(gtexData)]
 rownames(gtexCounts) <- gtexData$Name
 ```
