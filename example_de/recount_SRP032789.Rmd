@@ -1,7 +1,7 @@
 ---
 title: 'recount (gene and exon analyses)'
 author: 'Kai Kammers and Shannon Ellis'
-date: 'July 12, 2016'
+date: 'July 22, 2016'
 output:
   BiocStyle::html_document:
     toc: true
@@ -35,7 +35,9 @@ bibs <- c(
     RSkittleBrewer = citation('RSkittleBrewer'),
     SummarizedExperiment = citation('SummarizedExperiment'),
     topGO = citation('topGO'),
-    voom = RefManageR::BibEntry('article', key = 'voom', author = 'CW Law and Y Chen and W Shi and GK Smyth', year = '2014', title = 'Voom: precision weights unlock linear model analysis tools for RNA-seq read counts', journal = 'Genome Biology', volume = '15', pages = 'R29')
+    voom = RefManageR::BibEntry('article', key = 'voom', author = 'CW Law and Y Chen and W Shi and GK Smyth', year = '2014', 
+                                title = 'Voom: precision weights unlock linear model analysis tools for RNA-seq read counts', 
+                                journal = 'Genome Biology', volume = '15', pages = 'R29')
 )
 
 write.bibtex(bibs,
@@ -47,7 +49,7 @@ names(bib) <- names(bibs)
 ```
 
 
-Included is an example of how to download and analyze expression data from SRA study [SRP032798](http://trace.ncbi.nlm.nih.gov/Traces/sra/?study=SRP032798). The data come from human breast cancer samples, and we compare the transcriptomes of TNBC samples (triple negative breast cancer) and HER2-positive breast cancer samples (breast cancer type that tests positive for a protein called human epidermal growth factor receptor 2). Code here demonstrates how to carry out differential expression analyses on gene, exon, and junction levels within a single study using `limma` and `voom`. We test for concordance among the results of each analysis and demonstrate how to carry out gene ontology analysis using `topGO` to characterize top hits from differential expression analyses.
+Included is an example of how to download and analyze expression data from SRA study [SRP032798](http://trace.ncbi.nlm.nih.gov/Traces/sra/?study=SRP032798). The data come from human breast cancer samples, and we compare the transcriptomes of TNBC samples (triple negative breast cancer) and HER2-positive breast cancer samples (breast cancer type that tests positive for a protein called human epidermal growth factor receptor 2). Code here demonstrates how to carry out differential expression analyses on gene, exon, junction, and differential expressed region (DER) levels within a single study using `limma` and `voom`. We test for concordance among the results of each analysis and demonstrate how to carry out gene ontology analysis using `topGO` to characterize top hits from differential expression analyses.
 
 We first load the required packages.
 
@@ -79,7 +81,7 @@ project_info
 ## Browse the project at SRA
 browse_study(project_info$project)
 
-## Download the gene-level RangedSummarizedExperiment data
+## Download the gene level RangedSummarizedExperiment data
 if(!file.exists(file.path('SRP032789', 'rse_gene.Rdata'))) {
     download_study(project_info$project)
 }
@@ -167,7 +169,7 @@ legend('topright', pch = 19, col = trop[c(1, 2)],
        names(summary(as.factor(rse$group))))
 ```
 
-Having determined there are no sample outliers in these data, we carry out differential gene expression analysis. Differential gene expression between TNBC and HER2-positive samples are determined using `limma` and `voom`. Differentially expressed genes are visualized using a volcano plot to compare the effect size of the differential expression [ as measured by the $log_2(fold \. change)$ in expression ] and its significance [ $-log_10(p-value)$ ].
+Having determined there are no sample outliers in these data, we carry out differential gene expression analysis. Differential gene expression between TNBC and HER2-positive samples are determined using `limma` and `voom`. Differentially expressed genes are visualized using a volcano plot to compare the effect size of the differential expression [ as measured by the $log_2(fold-change)$ in expression ] and its significance [ $-log_10(p-value)$ ].
 
 ```{r voom-genes, fig.height = 8, fig.width = 8}
 ## Perform differential expression analysis with limma-voom
@@ -188,12 +190,10 @@ rownames(res_gene) <- rownames(counts)
 ## Determine the number of genes differentially expressed at q<0.05
 sum(res_gene$q.mod < 0.05)
 
-
 ## Histogram of p-values
 par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
 hist(p.mod, col = trop[2], xlab = 'p-value',
      main = 'Histogramm of p-values', breaks = 100)
-
 
 ## Volcano plot
 par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
@@ -211,7 +211,7 @@ title('Volcano plot: TNBC vs. HER2+ in SRP032789 (gene level)')
 
 
 
-# Gene set analysis
+# Gene set enrichment analysis
 To get a better understanding of those genes showing differential gene expression, we utilize `topGO`, a gene set analysis library. Genes included in this analysis are those reaching a q-value cutoff less than 0.05. 
 
 ```{r topgo-prep} 
@@ -222,16 +222,16 @@ interesting <- function(x) x < 0.05
 After determining which genes to include for analysis, `topGO` objects are generated and the enrichment tests are run. The Kolomogorov-Smirnov (`ks`) test is used to test for distributional differences. Here, we ask whether each GO group is "enriched" for differentially expressed (`q.mod < 0.05`) genes. Equivalently, we are testing whether the p-value distributions are the same for genes in and outside of each gene ontology. We run tests on the "biological processes" ontology. 
 
 ```{r bp}
-topgoobjBP <- new('topGOdata', 
+topgoobjBP <- new('topGOdata',
     description = 'biological process',
-    ontology = 'BP', allGenes = q.mod, geneSelectionFun = interesting, 
+    ontology = 'BP', allGenes = q.mod, geneSelectionFun = interesting,
     annotationFun = annFUN.org, mapping = 'org.Hs.eg.db', ID = 'entrez')
 
 bptest <- runTest(topgoobjBP, algorithm = 'weight01', statistic = 'ks')
 bptest
 bpres_gene <- GenTable(topgoobjBP, pval = bptest,
                        topNodes = length(bptest@score), numChar = 100)
-head(bpres_gene, n = 10)                  
+head(bpres_gene, n = 10)
 ```
 
 
@@ -240,7 +240,7 @@ head(bpres_gene, n = 10)
 
 As above, we are interested here in differential expression. However, rather than summarizing across genes, this analysis will look for differential expression at the exon level. In this analysis, we include all exons that map to the previous filtered genes and again carry out differential expression analysis  using `limma` and `voom`.
 
-Here, we download data from the same project as above (SRP032798); however, this time, we are interested in obtaining the exon-level data.
+Here, we download data from the same project as above (SRP032798); however, this time, we are interested in obtaining the exon level data.
 
 ```{r download-exons}
 ## Find a project of interest (SRP032789)
@@ -250,7 +250,7 @@ project_info
 ## Browse the project at SRA
 browse_study(project_info$project)
 
-## Download the exon-level RangedSummarizedExperiment data
+## Download the exon level RangedSummarizedExperiment data
 if(!file.exists(file.path('SRP032789', 'rse_exon.Rdata'))) {
     download_study(project_info$project, type = 'rse-exon')
 }
@@ -337,7 +337,7 @@ legend('topright', pch = 19, col = trop[c(1, 2)],
        names(summary(as.factor(rse$group))))
 ```
 
-Again, differential expression analysis is carried out using `limma` and `voom`; however, this time at the exon, rather than gene, level. Data are again visualized using a volcano plot to assess the strength [ $log_2(fold \. change)$ in expression ] and its significance [ $-log_10(p-value)$ ].for each exon.
+Again, differential expression analysis is carried out using `limma` and `voom`; however, this time at the exon, rather than gene, level. Data are again visualized using a volcano plot to assess the strength [ $log_2(fold-change)$ in expression ] and its significance [ $-log_10(p-value)$ ].for each exon.
 
 ```{r voom-exons, fig.height = 8, fig.width = 8}
 design <- model.matrix(~ rse$group)
@@ -353,8 +353,15 @@ p.mod <- fit$p.value[, 2]
 q.mod <- qvalue(p.mod)$q
 res_exon <- data.frame(log2FC, p.mod, q.mod)
 
+
 ## Determine the number of exons differentially expressed at q<0.05
 sum(res_exon$q.mod < 0.05)
+
+
+## Histogram of p-values
+par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
+hist(p.mod, col = trop[2], xlab = 'p-value',
+     main = 'Histogramm of p-values', breaks = 100)
 
 ## Volcano plot
 par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
@@ -377,7 +384,7 @@ title('Volcano plot: TNBC vs. HER2+ in SRP032789 (exon level)')
 
 As above, we are interested here in differential expression. However, rather than summarizing across genes, this analysis will look for differential expression at the junction level. In this analysis, we include all junctions that map to the previous filtered genes and again carry out differential expression analysis using `limma` and `voom`.
 
-Here, we download data from the same project as above (SRP032798); however, this time, we are interested in obtaining the junction-level data.
+Here, we download data from the same project as above (SRP032798); however, this time, we are interested in obtaining the junction level data.
 
 ```{r download-jx}
 ## Find a project of interest (SRP032789)
@@ -387,9 +394,9 @@ project_info
 ## Browse the project at SRA
 browse_study(project_info$project)
 
-## Download the exon-level RangedSummarizedExperiment data
+## Download the exon level RangedSummarizedExperiment data
 if(!file.exists(file.path('SRP032789', 'rse_jx.Rdata'))) {
-    download_study(project_info$project, type = 'rse-exon')
+    download_study(project_info$project, type = 'rse-jx')
 }
 
 ## Load the data
@@ -405,7 +412,7 @@ As above, downloaded count data are first scaled to take into account differing 
 
 ```{r jx}
 ## Scale counts by taking into account the total coverage per sample
-rse <- scale_counts(rse_jx)
+rse <- scale_counts(rse_jx, by = 'mapped_reads', round = FALSE)
 
 ## Download pheno data from 
 ## http://trace.ncbi.nlm.nih.gov/Traces/study/?acc=SRP032789
@@ -441,15 +448,15 @@ gene_id <- rownames(counts_gene)
 
 ## Save number of genes that a junctions maps to
 ## We will exclude non-unique junctions later 
-num_genes <- lapply(rowData(rse_jx_filt)$gene_id, function(x) length(x))
+num_genes <- lapply(rowData(rse_jx_filt)$gene_id_proposed, function(x) length(x))
 num_genes <- unlist(num_genes)
 
 ## Save only the first gene_id
 jx_gene_id <- lapply(rowData(rse_jx_filt)$gene_id, function(x) x[1])
 jx_gene_id <- unlist(jx_gene_id)
 
-## There are a lot of NAs: junctions that do not map to geneIDs
-jx_gene_id[1:1000]
+## There are NAs: not every junctions is annotated
+jx_gene_id[1:100]
 
 ## Compare lengths
 length(jx_gene_id) == dim(counts)[1]
@@ -458,7 +465,7 @@ length(jx_gene_id) == dim(counts)[1]
 double_jx <- which(num_genes >1)
 
 ## Check non-unique mapping junctions
-rowData(rse_jx_filt)[double_jx, c('junction_id', 'gene_ids')]
+rowData(rse_jx_filt)[double_jx, 'gene_id']
 
 ## Set non-unique mapping junctions to "NA" in
 jx_gene_id[double_jx] <- NA
@@ -477,6 +484,9 @@ dim(counts)
 ## We remove them 
 counts <- counts[apply(counts, 1, sum) > 0, ]
 dim(counts)
+
+## Remove junctions with low counts across samples
+counts <- counts[rowMeans(counts) > 0.1, ]
 
 ## Save for gene, exon and junction comparisons
 counts_jx <- counts
@@ -513,7 +523,7 @@ legend('topright', pch = 19, col = trop[c(1, 2)],
        names(summary(as.factor(rse$group))))
 ```
 
-Again, differential expression analysis is carried out using `limma` and `voom`; however, this time at the junction, rather than gene, level. Data are again visualized using a volcano plot to assess the strength [ $log_2(fold \. change)$ in expression ] and its significance [ $-log_10(p-value)$ ] for each junction.
+Again, differential expression analysis is carried out using `limma` and `voom`; however, this time at the junction, rather than gene, level. Data are again visualized using a volcano plot to assess the strength [ $log_2(fold-change)$ in expression ] and its significance [ $-log_10(p-value)$ ] for each junction.
 
 ```{r voom-jx, fig.height = 8, fig.width = 8}
 design <- model.matrix(~ rse$group)
@@ -541,7 +551,7 @@ plot(log2FC, -log10(p.mod),
      xlab = bquote(paste(log[2], ' (fold change)')), 
      ylab = bquote(paste(-log[10], ' (p-value)')))
 abline(v = seq(-10, 10, 1), col = 'lightgray', lty = 'dotted')
-abline(h = seq(0, 23, 1), col = 'lightgray', lty = 'dotted')
+abline(h = seq(0, 2356, 1), col = 'lightgray', lty = 'dotted')
 points(log2FC, -log10(p.mod), pch = 19, col = trop[2])
 title('Volcano plot: TNBC vs. HER2+ in SRP032789 (junction level)')
 ```
@@ -549,8 +559,8 @@ title('Volcano plot: TNBC vs. HER2+ in SRP032789 (junction level)')
 
 
 
-# Comparision of gene, exon, and junction results
-To compare findings at the gene, exon, and junction level, we obtained a single exon-level [or junction-level] p-value for each gene included at the gene-level analysis. To do this, we utilized Simes' rule [PMID: 23330866], such that for each gene included in the gene-level analysis, the p-values for exons [or junctions] within that gene were extracted and sorted. Each exon-level [or junction-level] p-value is then multiplied by the number of exons [or junctions] present within the gene. For each exon [or junction] (1,2...n), this quantity is divided by that exon's rank [ or junction's rank] (where 1=most significant exon [or junction] and n=least significant). The minimum value from this calcultion is assigned as the exon-level [or junction level] p-value at each gene.
+# Comparison of gene, exon, junction, and DER results
+To compare findings at the gene, exon, junction, and DER level, we obtained a single exon level [or junction level or DER level] p-value for each gene included at the gene level analysis. To do this, we utilized Simes' rule, such that for each gene included in the gene level analysis, the p-values for exons [or junctions or DERs] within that gene were extracted and sorted. Each exon level [or junction level or DER level] p-value is then multiplied by the number of exons [or junctions or DERs] present within the gene. For each exon [or junction or DER] (1,2...n), this quantity is divided by that exon's rank [ or junction's rank or DER's rank] (where 1=most significant exon [or junction or DER] and n=least significant). The minimum value from this calcultion is assigned as the exon level [or junction level or DER level] p-value at each gene. DER results are loaded from the DER analysis report that is described and rendered in `recount_DER_SRP032789.*`
 
 ```{r, exons-to-genes}
 ## Obtain geneIDs
@@ -570,7 +580,7 @@ for(i in seq_len(length(gene_id))){
 names(p_exon_gene) <- gene_id
 q_exon_gene <- qvalue(p_exon_gene)$q
 
-## Determine the number of 'gene-level exons' differentially expressed q < 0.05
+## Determine the number of 'gene level exons' differentially expressed q < 0.05
 sum(q_exon_gene < 0.05)
 
 
@@ -581,16 +591,16 @@ sum(q_exon_gene < 0.05)
 ## Gene set analysis (p-values of genes derived with Simes' rule from exon p-values)
 interesting <- function(x) x < 0.05
 
-topgoobjBP <- new('topGOdata', 
+topgoobjBP <- new('topGOdata',
     description = 'biological process',
-    ontology = 'BP', allGenes = q_exon_gene, geneSelectionFun = interesting, 
+    ontology = 'BP', allGenes = q_exon_gene, geneSelectionFun = interesting,
     annotationFun = annFUN.org, mapping = 'org.Hs.eg.db', ID = 'entrez')
 
 bptest <- runTest(topgoobjBP, algorithm = 'weight01', statistic = 'ks')
 bptest
 bpres_exon <- GenTable(topgoobjBP, pval = bptest,
                        topNodes = length(bptest@score), numChar = 100)
-head(bpres_exon, n = 10)                  
+head(bpres_exon, n = 10)
 ```
 
 
@@ -613,15 +623,11 @@ for(i in seq_len(length(gene_id))){
 names(p_jx_gene) <- gene_id
 
 
-## ERROR when calcualting q-values 
-# q_jx_gene <- qvalue(p_jx_gene)$q
+## Determine the number of 'gene leveljunction' differentially expressed q < 0.05
+q_jx_gene <- qvalue(p_jx_gene)$q
 
-## Alternative for multiple comparison adjustment
-q_jx_gene <- p.adjust(p_jx_gene)
-
-## Determine the number of 'gene-level junctions' differentially expressed q < 0.05
+## Determine the number of 'gene level junctions' differentially expressed q < 0.05
 sum(q_jx_gene < 0.05)
-
 
 
 ## As above, 'topGO' can be utilized to assign biological function to 
@@ -630,27 +636,72 @@ sum(q_jx_gene < 0.05)
 ## Gene set analysis (p-values of genes derived with Simes' rule from exon p-values)
 interesting <- function(x) x < 0.05
 
-topgoobjBP <- new('topGOdata', 
+topgoobjBP <- new('topGOdata',
     description = 'biological process',
-    ontology = 'BP', allGenes = q_jx_gene, geneSelectionFun = interesting, 
+    ontology = 'BP', allGenes = q_jx_gene, geneSelectionFun = interesting,
     annotationFun = annFUN.org, mapping = 'org.Hs.eg.db', ID = 'entrez')
 
 bptest <- runTest(topgoobjBP, algorithm = 'weight01', statistic = 'ks')
 bptest
 bpres_jx <- GenTable(topgoobjBP, pval = bptest,
                        topNodes = length(bptest@score), numChar = 100)
-head(bpres_jx, n = 10)                  
+head(bpres_jx, n = 10)
 ```
 
 
 
-# Concordance (genes)
+```{r, DER-to-genes}
+## Load p-values from DER anaysis
+load(file.path(project_info$project, 'AnnotatedDERs.Rdata'))
+p.mod <- annotatedDERs
 
-To determine the concordance between the gene- and exon-level analyses, the top hits (as determined by p-value) are compared. Results are plotted such that the points falling along the identity line would indicate complete agreement between the top hits of each analysis. 
+## Obtain geneIDs
+gene_id <- unique(names(p.mod))
 
+## Calculate p-values for genes with Simes' rule
+p_DER_gene <- NULL
+for(i in seq_len(length(gene_id))){
+    p_DER <- p.mod[names(p.mod) %in% gene_id[i]]
+    p_DER <- sort(p_DER)
+    p_DER_simes <- NULL 
+    for(j in 1:length(p_DER)){
+        p_DER_simes[j] <- length(p_DER) * p_DER[j] / j
+    }
+    p_DER_gene[i] <- min(p_DER_simes)
+}
+names(p_DER_gene) <- gene_id
+q_DER_gene <- qvalue(p_DER_gene)$q
+
+## Determine the number of 'gene level DERs' differentially expressed q < 0.05
+sum(q_DER_gene < 0.05)
+
+
+## As above, 'topGO' can be utilized to assign biological function to 
+## differentially expressed DERs.
+
+## Gene set analysis (p-values of genes derived with Simes' rule from DER p-values)
+interesting <- function(x) x < 0.05
+
+topgoobjBP <- new('topGOdata',
+    description = 'biological process',
+    ontology = 'BP', allGenes = q_DER_gene, geneSelectionFun = interesting,
+    annotationFun = annFUN.org, mapping = 'org.Hs.eg.db', ID = 'entrez')
+
+bptest <- runTest(topgoobjBP, algorithm = 'weight01', statistic = 'ks')
+bptest
+bpres_DER <- GenTable(topgoobjBP, pval = bptest,
+                       topNodes = length(bptest@score), numChar = 100)
+head(bpres_DER, n = 10)
+```
+
+
+To determine the concordance between the gene level and (exon, junction, DER) level analyses, the top hits (as determined by p-value) are compared. Results are plotted such that the points falling along the identity line would indicate complete agreement between the top hits of each analysis. 
 
 
 ```{r, con, fig.width = 8, fig.height = 8}
+## Set colors
+trop <- RSkittleBrewer('tropical')[c(1, 2, 3)]
+
 ## Obtain and sort p-values for genes
 p.mod1 <- res_gene$p.mod
 names(p.mod1) <- rownames(res_gene)
@@ -660,134 +711,95 @@ p.mod1.sort <- p.mod1[order(p.mod1)]
 p.mod2 <- p_exon_gene
 p.mod2.sort <- p.mod2[order(p.mod2)]
 
-## Overlap for genes between studies
-table(names(p.mod1.sort) %in% names(p.mod2.sort))
-table(names(p.mod2.sort) %in% names(p.mod1.sort))
+## Obtain and sort p-values for genes derived from junctions
+p.mod3 <- p_jx_gene
+p.mod3.sort <- p.mod3[order(p.mod3)]
 
-conc <- NULL
+## Obtain and sort p-values for genes derived from DER
+p.mod4 <- p_DER_gene
+p.mod4.sort <- p.mod4[order(p.mod4)]
+
+
+## Overlap of features:
+    ## gene level and exon level
+table(names(p.mod1.sort) %in% names(p.mod2.sort))
+    ## gene level and junction level
+table(names(p.mod1.sort) %in% names(p.mod3.sort))
+    ## gene level and DER level
+table(names(p.mod1.sort) %in% names(p.mod4.sort))
+
+
+conc_exon <- NULL
+conc_jx <- NULL
+conc_DER <- NULL
 for(i in seq_len(length(p.mod1.sort))) {
-    conc[i] <- sum(names(p.mod1.sort)[1:i] %in% names(p.mod2.sort)[1:i])
+    conc_exon[i] <- sum(names(p.mod1.sort)[1:i] %in% names(p.mod2.sort)[1:i])
+    conc_jx[i] <- sum(names(p.mod1.sort)[1:i] %in% names(p.mod3.sort)[1:i])
+    conc_DER[i] <- sum(names(p.mod1.sort)[1:i] %in% names(p.mod4.sort)[1:i])
 }
 
-## Concordance plots with different x-axis
-par(mfrow = c(1, 1), font.lab = 1.5, cex.lab = 1.2, font.axis = 1.5, cex.axis = 1.2)
-plot(seq(1:length(p.mod1.sort)), conc, 
+
+## All genes
+par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
+plot(seq(1:length(p.mod1.sort)), conc_exon, 
      type = 'l', las = 0,
      xlim = c(0, 18000),
      ylim = c(0, 18000),
-     xlab = 'ordered genes',
-     ylab = 'ordered genes (from exon analysis)',
+     xlab = 'ordered genes (gene level)',
+     ylab = 'ordered genes (feature level)',
      main = 'Concordance')
 for(k in 1:3){
     abline(v = k * 5000, cex = 0.5, col = 'lightgrey')
     abline(h = k * 5000, cex = 0.5, col = 'lightgrey')
 }
-lines(seq(1:length(p.mod1.sort)), conc, col = 'black', lwd = 2)
+points(seq(1:length(p.mod1.sort)), conc_jx, type = 'l', lwd = 2, col = trop[2])
+lines(seq(1:length(p.mod1.sort)), conc_exon, lwd = 2,  col = trop[1])
+lines(seq(1:length(p.mod1.sort)), conc_DER, lwd = 2,  col = trop[3])
+legend('topleft', pch = 19, col = trop[c(1, 2, 3)], c("exon", "junction", "DER"))
 
 
-par(mfrow = c(1, 1), font.lab = 1.5, cex.lab = 1.2, font.axis = 1.5,
-    cex.axis = 1.2)
-plot(seq(1:length(p.mod1.sort[1:100])), conc[1:100], 
+## Top 100 genes
+par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
+plot(seq(1:length(p.mod1.sort[1:100])), conc_exon[1:100], 
      type = 'l',
      xlim = c(0, 100),
      ylim = c(0, 100),
-     xlab = 'ordered genes',
-     ylab = 'ordered genes (from exon analysis)',
+     xlab = 'ordered genes (gene level)',
+     ylab = 'ordered genes (exon/junction level)',
      main = 'Concordance')
 for(k in 1:5){
     abline(v = k * 20, cex = 0.5, col = 'lightgrey')
     abline(h = k * 20, cex = 0.5, col = 'lightgrey')
 }
-lines(seq(1:length(p.mod1.sort[1:100])), conc[1:100], col = 'black', lwd = 2)
+points(seq(1:length(p.mod1.sort[1:100])), conc_jx[1:100], type = 'l', lwd = 2, col = trop[2])
+lines(seq(1:length(p.mod1.sort[1:100])), conc_exon[1:100], lwd = 2,  col = trop[1] )
+lines(seq(1:length(p.mod1.sort[1:100])), conc_DER[1:100], lwd = 2,  col = trop[3])
+legend('topleft', pch = 19, col = trop[c(1, 2, 3)], c("exon", "junction", "DER"))
 
 
-par(mfrow = c(1, 1), font.lab = 1.5, cex.lab = 1.2, font.axis = 1.5,
-    cex.axis = 1.2)
-plot(seq(1:length(p.mod1.sort[1:1000])), conc[1:1000], 
+
+## Top 1,000 genes
+par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
+plot(seq(1:length(p.mod1.sort[1:1000])), conc_exon[1:1000], 
      type = 'l',
      xlim = c(0, 1000),
      ylim = c(0, 1000),
-     xlab = 'ordered genes',
-     ylab = 'ordered genes (from exon analysis)',
+     xlab = 'ordered genes (gene level)',
+     ylab = 'ordered genes (feature level)',
      main = 'Concordance')
 for(k in 1:5){
     abline(v = k * 200, cex = 0.5, col = 'lightgrey')
     abline(h = k * 200, cex = 0.5, col = 'lightgrey')
 }
-lines(seq(1:length(p.mod1.sort[1:1000])), conc[1:1000], col = 'black', lwd = 2)
+points(seq(1:length(p.mod1.sort[1:1000])), conc_jx[1:1000], type = 'l', lwd = 2, col = trop[2])
+lines(seq(1:length(p.mod1.sort[1:1000])), conc_exon[1:1000], lwd = 2,  col = trop[1] )
+lines(seq(1:length(p.mod1.sort[1:1000])), conc_DER[1:1000], lwd = 2,  col = trop[3])
+legend('topleft', pch = 19, col = trop[c(1, 2, 3)], c("exon", "junction", "DER"))
 ```
 
-Concordance can also be calculated looking at the gene ontology (GO) groups identified from the gene and exon-level analyses. Again, we plot the agreement between the two analyses such that complete agreement between the two analyses would fall along the identity line.
-
-# Concordance (GO groups)
-
-```{r, con-GO, fig.width = 8, fig.height = 8}
-## Obtain and sort p-values for genes
-p.mod1 <- bpres_gene$GO.ID
-names(p.mod1) <- bpres_gene$GO.ID
-p.mod1.sort <- p.mod1
-
-## Obtain and sort p-values for genes derived from exons
-p.mod2 <- bpres_exon$GO.ID
-names(p.mod2) <- bpres_exon$GO.ID
-p.mod2.sort <- p.mod2
-
-## Overlap for genes between studies
-table(names(p.mod1.sort) %in% names(p.mod2.sort))
-table(names(p.mod2.sort) %in% names(p.mod1.sort))
-
-conc <- NULL
-for(i in 1:length(p.mod1.sort)){
-    conc[i] <- sum(names(p.mod1.sort)[1:i] %in% names(p.mod2.sort)[1:i])
-}
+Concordance can also be calculated looking at the gene ontology (GO) groups identified from the gene and exon level analyses. Again, we plot the agreement between the two analyses such that complete agreement between the two analyses would fall along the identity line.
 
 
-par(mfrow = c(1, 1), font.lab = 1.5, cex.lab = 1.2, font.axis = 1.5, cex.axis = 1.2)
-plot(seq(1:length(p.mod1.sort)), conc, 
-     type = 'l', las = 0,
-     xlim = c(0, 18000),
-     ylim = c(0, 18000),
-     xlab = 'ordered GO groups',
-     ylab = 'ordered GO groups (from exon analysis)',
-     main = 'Concordance')
-for(k in 1:3){
-    abline(v = k * 5000, cex = 0.5, col = 'lightgrey')
-    abline(h = k * 5000, cex = 0.5, col = 'lightgrey')
-}
-lines(seq(1:length(p.mod1.sort)), conc, col = 'black', lwd = 2)
-
-
-par(mfrow = c(1, 1), font.lab = 1.5, cex.lab = 1.2, font.axis = 1.5,
-    cex.axis = 1.2)
-plot(seq(1:length(p.mod1.sort[1:100])), conc[1:100], 
-     type = 'l',
-     xlim = c(0, 100),
-     ylim = c(0, 100),
-     xlab = 'ordered GO groups',
-     ylab = 'ordered GO groups (from exon analysis)',
-     main = 'Concordance')
-for(k in 1:5){
-    abline(v = k * 20, cex = 0.5, col = 'lightgrey')
-    abline(h = k * 20, cex = 0.5, col = 'lightgrey')
-}
-lines(seq(1:length(p.mod1.sort[1:100])), conc[1:100], col = 'black', lwd = 2)
-
-
-par(mfrow = c(1, 1), font.lab = 1.5, cex.lab = 1.2, font.axis = 1.5,
-    cex.axis = 1.2)
-plot(seq(1:length(p.mod1.sort[1:1000])), conc[1:1000], 
-     type = 'l',
-     xlim = c(0, 1000),
-     ylim = c(0, 1000),
-     xlab = 'ordered GO groups',
-     ylab = 'ordered GO groups (from exon analysis)',
-     main = 'Concordance')
-for(k in 1:5){
-    abline(v = k * 200, cex = 0.5, col = 'lightgrey')
-    abline(h = k * 200, cex = 0.5, col = 'lightgrey')
-}
-lines(seq(1:length(p.mod1.sort[1:1000])), conc[1:1000], col = 'black', lwd = 2)
-```
 
 
 # Reproducibility

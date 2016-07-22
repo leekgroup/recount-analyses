@@ -1,7 +1,7 @@
 ---
 title: 'recount (overlay two studies)'
 author: 'Kai Kammers and Shannon Ellis'
-date: 'June 21, 2016'
+date: 'July 22, 2016'
 output:
   BiocStyle::html_document:
     toc: true
@@ -50,7 +50,7 @@ In these analyses, we compare differential expression findings from two differen
 Data herein are labeled as follows:
 
 -   study1 = SRP019936 (This is the 'new' study)
--   study2 = SRP032798 (This is the study that also used for gene, exon, expressed region, and exon-exon junction analyses)
+-   study2 = SRP032798 (This is the 'reference' study that is also used for gene, exon, junction, and differential expressed region (DER) analyses)
 
 
 
@@ -264,6 +264,9 @@ title('Volcano plot: TNBC vs. HER2+ in SRP019936 (gene level)')
 
 To compare these findings back to the breast cancer transcriptome data used to identify differential gene, exon, expressed region, and junction (SRP032798), we must again acquire these data, filter the read counts, and summarize gene expreesion as explained previously.
 
+
+
+
 # Independence hypotheses weighting
 
 ```{r IHW, fig.height = 8, fig.width = 8}
@@ -323,7 +326,6 @@ log2FC2 <- fit$coefficients[, 2]
 p.mod2 <- fit$p.value[, 2]
 q.mod2 <- qvalue(p.mod2)$q
 
-
 ## Use those genes from study 2 that are kept in study 1 
 t.mod2 <- t.mod2[names(t.mod1)]
 
@@ -351,8 +353,9 @@ sum(q.ihw < 0.05)
 sum(p.mod1 < 0.05)
 sum(q.mod1 < 0.05)
 
-plot(p.ihw.raw, p.ihw)
+#plot(p.ihw.raw, p.ihw)
 ```
+
 
 To determine the concordance across studies, p-values are ranked and compared across genes present in both studies. Results are plotted such that the points falling along the identity line would indicate complete concodance between the two studies. 
 
@@ -373,30 +376,29 @@ p.mod2 <- p.mod2[rownames(counts2)]
 p.mod1.sort <- p.mod1[order(p.mod1)]
 p.mod2.sort <- p.mod2[order(p.mod2)]
 
-
 ## overlap for genes between studies
 table(names(p.mod1.sort) %in% names(p.mod2.sort))
 table(names(p.mod2.sort) %in% names(p.mod1.sort))
 
 conc <- NULL
-for(i in 1:length(p.mod1.sort)){
-    conc[i] <- sum(names(p.mod1.sort)[1:i] %in% names(p.mod2.sort)[1:i])
+for(i in 1:length(p.mod2.sort)){
+    conc[i] <- sum(names(p.mod2.sort)[1:i] %in% names(p.mod1.sort)[1:i])
 }
 
 ## all genes
 par(mfrow = c(1, 1), font.lab = 1.5, cex.lab = 1.2, font.axis = 1.5, cex.axis = 1.2)
-plot(seq(1:length(p.mod1.sort)), conc, 
+plot(seq(1:length(p.mod2.sort)), conc, 
      type = 'l', las = 0,
      xlim = c(0, 20000),
      ylim = c(0, 20000),
-     xlab = 'ordered genes in study 1',
-     ylab = 'ordered genes in study 2',
+     xlab = 'ordered genes in reference study',
+     ylab = 'ordered genes in new study',
      main = 'Concordance')
 for(k in 1:3){
     abline(v = k * 5000, cex = 0.5, col = 'lightgrey')
     abline(h = k * 5000, cex = 0.5, col = 'lightgrey')
 }
-lines(seq(1:length(p.mod1.sort)), conc, col = 'black', lwd = 2)
+lines(seq(1:length(p.mod2.sort)), conc, col = 'black', lwd = 2)
 
 
 ## top 1000 genes
@@ -405,8 +407,8 @@ plot(seq(1:1000), conc[1:1000],
      type = 'l', las = 0,
      xlim = c(0, 1000),
      ylim = c(0, 1000),
-     xlab = 'ordered genes in study 1',
-     ylab = 'ordered genes in study 2',
+     xlab = 'ordered genes in reference study',
+     ylab = 'ordered genes in new study',
      main = 'Concordance')
 for(k in 1:2){
     abline(v = k * 500, cex = 0.5, col = 'lightgrey')
@@ -416,60 +418,62 @@ lines(seq(1:1000), conc[1:1000], col = 'black', lwd = 2)
 ```
 
 
-## p-values IHW and raw p-values
+
+## p-values IHW vs. raw p-values from both study
 
 ```{r, con-IHW, fig.width = 8, fig.height = 8}
-## use t-values from study 2 as weights for study 1
-ihw.res <- ihw(p.mod1 ~ t.mod2, alpha = 0.05)
-
-## sort p-values
-p.mod1.sort <- p.mod1[order(p.mod1)]
-p.mod2 <- ihw.res@df$weighted_pvalue
-names(p.mod2) <- rownames(ihw.res@df)
-p.mod2.sort <- p.mod2[order(p.mod2)]
+## sort p-values (ihw procedure)
+## p.mod1 and p.mod2 are sorted
+names(p.ihw) <- rownames(ihw.res@df)
+p.ihw.sort <- p.ihw[order(p.ihw)]
 
 ## overlap for genes between studies
 table(names(p.mod1.sort) %in% names(p.mod2.sort))
 table(names(p.mod2.sort) %in% names(p.mod1.sort))
+table(names(p.mod1.sort) %in% names(p.ihw.sort))
 
-conc <- NULL
-for(i in 1:length(p.mod1.sort)){
-    conc[i] <- sum(names(p.mod1.sort)[1:i] %in% names(p.mod2.sort)[1:i])
+conc_p.mod <- NULL
+conc_p.ihw <- NULL
+for(i in 1:length(p.mod2.sort)){
+    conc_p.mod[i] <- sum(names(p.mod2.sort)[1:i] %in% names(p.mod1.sort)[1:i])
+    conc_p.ihw[i] <- sum(names(p.mod2.sort)[1:i] %in% names(p.ihw.sort)[1:i])
 }
 
-## all genes
-par(mfrow = c(1, 1), font.lab = 1.5, cex.lab = 1.2, font.axis = 1.5, cex.axis = 1.2)
-plot(seq(1:length(p.mod1.sort)), conc, 
+## Concordance plot
+par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
+plot(seq(1:length(p.mod2.sort)), conc_p.mod, 
      type = 'l', las = 0,
      xlim = c(0, 20000),
      ylim = c(0, 20000),
-     xlab = 'ordered genes without IHW',
-     ylab = 'ordered genes with IHW',
+     xlab = 'ordered genes reference study',
+     ylab = 'ordered genes in new study',
      main = 'Concordance')
 for(k in 1:3){
     abline(v = k * 5000, cex = 0.5, col = 'lightgrey')
     abline(h = k * 5000, cex = 0.5, col = 'lightgrey')
 }
-lines(seq(1:length(p.mod1.sort)), conc, col = 'black', lwd = 2)
+lines(seq(1:length(p.mod2.sort)), conc_p.mod, col = trop[1], type = 'l', lwd = 2)
+points(seq(1:length(p.mod2.sort)), conc_p.ihw, col = trop[2], type = 'l', lwd = 2)
+legend('topleft', pch = 19, col = trop[c(1, 2)], c("p-value", "p-value (IHW)"))
 
 
-## top 2000 genes
-par(mfrow = c(1, 1), font.lab = 1.5, cex.lab = 1.2, font.axis = 1.5, cex.axis = 1.2)
-plot(seq(1:2000), conc[1:2000], 
+## top 1000 genes
+par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
+plot(seq(1:length(p.mod2.sort[1:1000])), conc_p.mod[1:1000], 
      type = 'l', las = 0,
-     xlim = c(0, 2000),
-     ylim = c(0, 2000),
-     xlab = 'ordered genes without IHW',
-     ylab = 'ordered genes with IHW',
+     xlim = c(0, 1000),
+     ylim = c(0, 1000),
+     xlab = 'ordered genes reference study',
+     ylab = 'ordered genes in new study',
      main = 'Concordance')
-for(k in 1:4){
-    abline(v = k * 500, cex = 0.5, col = 'lightgrey')
-    abline(h = k * 500, cex = 0.5, col = 'lightgrey')
+for(k in 1:5){
+    abline(v = k * 200, cex = 0.5, col = 'lightgrey')
+    abline(h = k * 200, cex = 0.5, col = 'lightgrey')
 }
-lines(seq(1:2000), conc[1:2000], col = 'black', lwd = 2)
+lines(seq(1:length(p.mod2.sort[1:1000])), conc_p.mod[1:1000], col = trop[1], type = 'l', lwd = 2)
+points(seq(1:length(p.mod2.sort[1:1000])), conc_p.ihw[1:1000], col = trop[2], type = 'l', lwd = 2)
+legend('topleft', pch = 19, col = trop[c(1, 2)], c("p-value", "p-value (IHW)"))
 ```
-
-
 
 
 # Reproducibility
