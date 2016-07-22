@@ -34,6 +34,7 @@ bibs <- c(
     coop = citation('coop')[1],
     derfinder = citation('derfinder')[1],
     devtools = citation('devtools'),
+    downloader = citation('downloader'),
     dplyr = citation('dplyr'),
     edgeR = citation('edgeR')[1],
     ffpe = citation('ffpe'),
@@ -70,6 +71,7 @@ The analyses were made possible thanks to:
 * `r CRANpkg('coop')` `r citep(bib[['coop']])`
 * `r Biocpkg('derfinder')` `r citep(bib[['derfinder']])`
 * `r CRANpkg('devtools')` `r citep(bib[['devtools']])`
+* `r CRANpkg('downloader')` `r citep(bib[['downloader']])`
 * `r CRANpkg('dplyr')` `r citep(bib[['dplyr']])`
 * `r Biocpkg('edgeR')` `r citep(bib[['edgeR']])`
 * `r Biocpkg('ffpe')` `r citep(bib[['ffpe']])`

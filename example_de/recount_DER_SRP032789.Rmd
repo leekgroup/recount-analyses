@@ -25,6 +25,7 @@ bibs <- c(
     BiocStyle = citation('BiocStyle'),
     derfinder = citation('derfinder')[1],
     devtools = citation('devtools'),
+    downloader = citation('downloader'),
     edgeR = citation('edgeR')[1],
     GenomicRanges = citation('GenomicRanges'),
     knitcitations = citation('knitcitations'),
@@ -66,6 +67,7 @@ library('derfinderPlot')
 library('BiocParallel')
 library('GenomicRanges')
 library('bumphunter')
+library('downloader')
 library('TxDb.Hsapiens.UCSC.hg38.knownGene')
 
 ## set colors 
@@ -223,7 +225,13 @@ There are `r length(regions_counts_sig)` statistically significant regions detec
 ```{r visualizing-DERs, fig.height = 8, fig.width = 8}
 
 ## Get Annotation
-## Genomic state created by https://github.com/nellore/runs/blob/master/gtex/DER_analysis/coverageMatrix/genomicState/hg38-genomicState.R
+
+
+if(!file.exists('genomicState.Hsapiens.BioMart.ENSEMBLMARTENSEMBL.GRCh38.p5.Rdata')) {
+    ## Genomic state created by https://github.com/nellore/runs/blob/master/gtex/DER_analysis/coverageMatrix/genomicState/hg38-genomicState.R
+    download('https://github.com/nellore/runs/blob/master/gtex/DER_analysis/coverageMatrix/genomicState/genomicState.Hsapiens.BioMart.ENSEMBLMARTENSEMBL.GRCh38.p5.Rdata?raw=true', mode = 'wb', destfile = 'genomicState.Hsapiens.BioMart.ENSEMBLMARTENSEMBL.GRCh38.p5.Rdata')
+}
+
 load('genomicState.Hsapiens.BioMart.ENSEMBLMARTENSEMBL.GRCh38.p5.Rdata')
 gs_raw <- genomicState.Hsapiens.BioMart.ENSEMBLMARTENSEMBL.GRCh38.p5$fullGenome
 gs <- renameSeqlevels(gs_raw, paste0('chr', seqlevels(gs_raw)))
@@ -446,6 +454,7 @@ This analysis report was made possible thanks to:
 * `r Biocpkg('BiocStyle')` `r citep(bib[['BiocStyle']])`
 * `r Biocpkg('derfinder')` `r citep(bib[['derfinder']])`
 * `r CRANpkg('devtools')` `r citep(bib[['devtools']])`
+* `r CRANpkg('downloader')` `r citep(bib[['downloader']])`
 * `r Biocpkg('edgeR')` `r citep(bib[['edgeR']])`
 * `r Biocpkg('GenomicRanges')` `r citep(bib[['GenomicRanges']])`
 * `r CRANpkg('knitcitations')` `r citep(bib[['knitcitations']])`
