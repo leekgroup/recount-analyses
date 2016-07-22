@@ -64,6 +64,8 @@ library('recount')
 library('rtracklayer')
 library('stringr')
 library('SummarizedExperiment')
+library('limma')
+library('edgeR')
 ```
 
 ## Data objects
@@ -173,40 +175,30 @@ save(gtexCounts, gtexMap, gtexPd, recountCounts, recountMap, file =
 ```{r loadMap}
 load("GTEx_websiteAndRecount_EntrezMatched_17559_vs_8551_reproduced.Rdata")
 gtexCounts <- as.matrix(gtexCounts)
+ind = which(colSums(is.na(gtexCounts)) == 0)
+gtexCounts2 <- log2(sweep(gtexCounts, MARGIN = 2, FUN = "/", 
+    colSums(gtexCounts) / (4 * 10^7 )) + 1)[,ind]
+recountCounts2 <- log2(recountCounts[,ind]+1)
+gtexPd2 = gtexPd[ind,]
 ```
 
 ```{r rawCounts comparisons}
-rawCors <- sapply(seq_len(nrow(gtexCounts)), function(ii) pcor(gtexCounts[ii, ],
-    recountCounts[ii,]))
-summary(rawCors)
-sum(rawCors <= 0.95, na.rm = TRUE)
-sum(rawCors <= 0.80, na.rm = TRUE)
-mean(rawCors >= 0.99, na.rm = TRUE)
-```
-
-```{r rawCountsPlot, plot = TRUE}
-pdf(file = "rawCorrelations.pdf")
-dens <- density(rawCors, from = -1, to = 1, na.rm = TRUE, n = 4096)
-plot(dens, xlab = "Pearson correlation", main = "Raw counts")
-plot(dens, xlab = "Pearson correlation",
-     main = "Raw counts", xlim = c(0.9,1))
-dev.off()
-```
-
-```{r normCounts}
-gtexCounts2 <- log2(sweep(gtexCounts, MARGIN = 2, FUN = "/", 
-    colSums(gtexCounts) / (4 * 10^7 )) + 1)
-recountCounts2 <- log2(assay(rse_gene2, "counts")[rownames(recountCounts),
-    colnames(recountCounts)] + 1)
-normCors <- sapply(seq_len(nrow(gtexCounts2)), function(ii) 
-    pcor(gtexCounts2[ii, ], recountCounts2[ii, ]))
+normCors <- sapply(seq_len(nrow(gtexCounts2)),
+	function(ii) pcor(gtexCounts2[ii, ],  recountCounts2[ii,]))
 summary(normCors)
+sum(normCors <= 0.95, na.rm = TRUE)
+sum(normCors <= 0.80, na.rm = TRUE)
+mean(normCors >= 0.99, na.rm = TRUE)
 ```
 
 ```{r normCountsPlot, plot = TRUE}
-pdf(file = "normCors.pdf")
-plot(density(normCors, from = -1, to = 1, na.rm = TRUE),
-     xlab = "Pearson correlation", main = "Gene counts, normalized for library size")
+pdf(file = "normCorrelations.pdf")
+dens <- density(normCors, from = -1,
+	to = 1, na.rm = TRUE, n = 4096)
+plot(dens, xlab = "Pearson correlation",
+	main = "Size-scaled counts")
+plot(dens, xlab = "Pearson correlation",
+     main = "Size-scaled counts", xlim = c(0.9,1))
 dev.off()
 ```
 
@@ -215,26 +207,52 @@ dev.off()
 Between colon and blood
 
 ```{r 'incomplete', eval = FALSE}
-gtex_metadata <- all_metadata("gtex")
-gtex_metadata2 <- subset(gtex_metadata, smtsd %in% c("Whole Blood", "Colon"))[, c("run", "smtsd", "smgebtch")]
-colnames(gtex_metadata2)[c(2,3)] <- c("tissue", "batch")
-gtex_metadata2 <- subset(gtex_metadata2, run %in% colnames(recountCounts2))
-rownames(gtex_metadata2) <- gtex_metadata2$run
-recountCounts2.de <- recountCounts2[, gtex_metadata2$run]
-gtexCounts2.de <- gtexCounts2[, gtex_metadata2$run]
-
-## need to get correct counts
-design <- model.matrix(~ tissue + batch, levels = gtex_metadata2)
-
-
-design <- gtex = model.matrix(~colData(gtex <- both)$tissue + colData(gtex <- both)$batch)
-dge <- gtex = DGEList(counts=gtex <- both <- counts)
-dge <- gtex = calcNormFactors(dge <- gtex)
-v <- gtex <- voom(dge <- gtex,design <- gtex,plot=TRUE)
-fit <- gtex <- lmFit(v <- gtex,design <- gtex)
-fit <- gtex <- eBayes(fit <- gtex)
-hist(fit <- gtex$p.value[,2],col=trop[2],main="DE",breaks=100)
+indTissue = c(which(gtexPd2$smts == "Colon"),
+	which(gtexPd2$smtsd == "Whole Blood"))
+gtexPd2_sub = gtexPd2[indTissue,]
+recountCounts2_sub = recountCounts2[,indTissue]
+gtexCounts2_sub = gtexCounts2[,indTissue]
+design <- model.matrix(~ smts , data = gtexPd2_sub)
 ```
+
+Using recount:
+
+```{r, recountDE}
+dge_recount = DGEList(counts = recountCounts2_sub)
+dge_recount = calcNormFactors(dge_recount)
+v_recount = voom(dge_recount, design,plot=FALSE)
+fit_recount = lmFit(v_recount, design)
+eb_recount = ebayes(fit_recount)
+out_recount = data.frame(log2FC = fit_recount$coef[,2],
+	tstat = eb_recount$t[,2], pvalue = eb_recount$p[,2])
+colnames(out_recount) = paste0(colnames(out_recount),"_recount")
+```
+
+And using original counts:
+
+```{r, gtexDE}
+dge_gtex = DGEList(counts = gtexCounts2_sub)
+dge_gtex = calcNormFactors(dge_gtex)
+v_gtex = voom(dge_gtex, design,plot=FALSE)
+fit_gtex = lmFit(v_gtex, design)
+eb_gtex = ebayes(fit_gtex)
+out_gtex = data.frame(log2FC = fit_gtex$coef[,2],
+	tstat = eb_gtex$t[,2], pvalue = eb_gtex$p[,2])
+colnames(out_gtex) = paste0(colnames(out_gtex),"_gtex")
+```
+
+Compare:
+
+```{r, compareTstat}
+M = out_recount$log2FC_recount - out_gtex$log2FC_gtex
+A = ( out_recount$log2FC_recount + out_gtex$log2FC_gtex)/2
+plot(M ~ A, xlab="Average Log2 Fold Change", 
+	ylab="Colon-Blood Difference in log2FCs",
+	pch = 21, bg="grey")
+```	
+
+The R-squared is `r 
+cor(out_recount$log2FC_recount ,out_gtex$log2FC_gtex)^2`
 
 # Reproducibility
 
