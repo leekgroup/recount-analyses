@@ -85,7 +85,13 @@ library('edgeR')
 We have downloaded the annotation GTF files as well as the raw gene count matrix from the [GTEx portal](http://www.gtexportal.org).
 
 ```{r gtexWebsite}
-dataPath <- "/dcs01/ajaffe/GTEX/V6" # wherever data was downloaded
+if(all(file.exists('gencode.v19.genes.patched_contigs.gtf', 'GTEx_Analysis_v6_RNA-seq_RNA-SeQCv1.1.8_gene_reads.gct.gz'))) {
+    dataPath <- '.'
+} else {
+    dataPath <- "/dcs01/ajaffe/GTEX/V6" # wherever data was downloaded
+}
+
+
 gtexGtf <- import(file.path(dataPath, "gencode.v19.genes.patched_contigs.gtf"))
 gtexData <- read_tsv(file.path(dataPath,
     "GTEx_Analysis_v6_RNA-seq_RNA-SeQCv1.1.8_gene_reads.gct.gz"),
@@ -104,7 +110,12 @@ These are the the Rail-RNA processed samples
 ## load('SRP012682/rse_gene.Rdata')
 
 # Will remove this line in the future and uncomment the above
-load("/dcl01/leek/data/recount-website/rse/rse_gtex/SRP012682/rse_gene.Rdata")
+if(file.exists('SRP012682/rse_gene.Rdata')) {
+    load('SRP012682/rse_gene.Rdata')
+} else {
+    load('/dcl01/leek/data/recount-website/rse/rse_gtex/SRP012682/rse_gene.Rdata')
+}
+
 gtexPd <- colData(rse_gene)
 ```
 
