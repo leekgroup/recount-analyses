@@ -652,7 +652,7 @@ head(bpres_jx, n = 10)
 
 ```{r, DER-to-genes}
 ## Load p-values from DER anaysis
-load(file.path(project_info$project, 'AnnotatedDERs.Rdata'))
+load('AnnotatedDERs.Rdata')
 p.mod <- annotatedDERs
 
 ## Obtain geneIDs
