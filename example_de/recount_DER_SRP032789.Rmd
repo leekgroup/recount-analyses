@@ -360,9 +360,10 @@ abline(h = seq(0, 23, 1), col = 'lightgray', lty = 'dotted')
 points(regions_counts_notingene$log2FC, -log10(regions_counts_notingene$p.mod), pch = 19, col = trop[2])
 title('Volcano plot: TNBC vs. HER2+ in SRP032789 (DERs not in genes)')
 ```
-There are `length(regions_counts_notingene[regions_counts_notingene$q.mod<0.05])` DERs that do not overlap with genes included in the gene-level analysis.
 
-These range in size from `min(width(regions_counts_notingene))` bps to `max(width(regions_counts_notingene))` bps in length, with a median length of `median(width(regions_counts_notingene))` bps.
+There are `r length(regions_counts_notingene[regions_counts_notingene$q.mod<0.05])` DERs that do not overlap with genes included in the gene-level analysis.
+
+These range in size from `r min(width(regions_counts_notingene))` bps to `r max(width(regions_counts_notingene))` bps in length, with a median length of `r median(width(regions_counts_notingene))` bps.
 
 # Compare DERs to known genomic annotation
 Beyond an interest in those regions not detected in the gene-level analysis, we are also interested in those regions that do not overlap any annotated gene. First, we quantify where DERs are found within the genome that do not overlap any known exons. Then, we highlight single locus coverage plots for a few of the longest DERs.
@@ -396,37 +397,36 @@ annoRegs <- annotateRegions(regions, gs, minoverlap = 1)
 ## Load full coverage
 SRP032789_urls <- subset(recount_url, project == 'SRP032789' & file_name != 'mean_SRP032789.bw')
 #### Leo! change recount_url$path to recount_url$url for submission ####
-files <- SRP032789_urls$path[grepl('bw$', SRP032789_urls$url)]
+files <- SRP032789_urls$url[grepl('bw$', SRP032789_urls$url)]
 names(files) <- gsub('.bw', '', SRP032789_urls$file_name[grepl('bw$', SRP032789_urls$url)])
 
 ## Only include TNBC and HER2+ samples
 files <- subset(files, names(files) %in% colnames(covMat_filt))
 
 ## Obtain fullCoverage matrix for all chromosomes
-which <- regions
-fullCov <- fullCoverage(files = files, chrs =c('chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7', 'chr8', 'chr9', 'chr10', 'chr11', 'chr12', 'chr13', 'chr14', 'chr15', 'chr16', 'chr17', 'chr18', 'chr19', 'chr20', 'chr21', 'chr22', 'chrX', 'chrY'), which = which)
+fullCov <- fullCoverage(files = files, chrs = paste0('chr', c(1:22, 'X', 'Y')),
+    which = regions, verbose = FALSE)
 
 ## Find nearest annotation with bumphunter::matchGenes()
 nearestAnnotation <- matchGenes(x = regions, subject = genes)
 
 ## Get the region coverage
 geneRegionCov <- getRegionCoverage(fullCov=fullCov, regions=regions,
-	targetSize = 4e+07, totalMapped=colData(rse)$reads_aligned)
+	targetSize = 4e+07, totalMapped=colData(rse)$reads_aligned, verbose = FALSE)
 geneRegionCovMeans = lapply(geneRegionCov, function(x) {
 	cat(".")
 	sapply(tIndexes, function(ii) rowMeans(x[,ii]))
 })
 
 ## Plot region coverage for the longest DERs 
-### Leo! Not sure we need to include this?
-pdf('plots/DERs_notingene.pdf', h = 5, w = 7)
+pdf('DERs_notingene.pdf', h = 5, w = 7)
 plotRegionCoverage(regions=regions, 
 	regionCoverage=geneRegionCovMeans,
 	groupInfo= factor(unique(rse$group)), colors = trop, 
 	nearestAnnotation=nearestAnnotation,
 	annotatedRegions=annoRegs,
 	ask=FALSE,	 whichRegions=1:10, verbose=FALSE, 
-	txdb = txdb)
+	txdb = TxDb.Hsapiens.UCSC.hg38.knownGene)
 dev.off()
 
 ## Example of DER outside of any exonic region
@@ -436,12 +436,12 @@ plotRegionCoverage(regions=regions,
 	nearestAnnotation=nearestAnnotation,
 	annotatedRegions=annoRegs,
 	ask=FALSE,	 whichRegions=6, verbose=FALSE, 
-	txdb = txdb)
+	txdb = TxDb.Hsapiens.UCSC.hg38.knownGene)
 
 ```
-There are `length(regions_counts_notinANYgene[regions_counts_notinANYgene$q.mod<0.05])` DERs that do not overlap with any known genes.
+There are `r length(regions_counts_notinANYgene[regions_counts_notinANYgene$q.mod<0.05])` DERs that do not overlap with any known genes.
 
-These range in size from `min(width(regions_counts_notinANYgene))` bps to `max(width(regions_counts_notinANYgene))` bps in length, with a median length of `median(width(regions_counts_notinANYgene))` bps.
+These range in size from `r min(width(regions_counts_notinANYgene))` bps to `r max(width(regions_counts_notinANYgene))` bps in length, with a median length of `r median(width(regions_counts_notinANYgene))` bps.
 
 
 
