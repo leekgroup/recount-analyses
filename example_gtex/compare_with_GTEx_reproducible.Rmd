@@ -25,6 +25,7 @@ bibs <- c(
     BiocStyle = citation('BiocStyle'),
     coop = citation('coop'),
     devtools = citation('devtools'),
+    edgeR = citation('edgeR')[2],
     knitcitations = citation('knitcitations'),
     'org.Hs.eg.db' = citation('org.Hs.eg.db'),
     R = citation(),
@@ -265,6 +266,7 @@ This analysis report was made possible thanks to:
 * `r Biocpkg('BiocStyle')` `r citep(bib[['BiocStyle']])`
 * `r CRANpkg('coop')` `r citep(bib[['coop']])`
 * `r CRANpkg('devtools')` `r citep(bib[['devtools']])`
+* `r Biocpkg('edgeR')` `r citep(bib[['edgeR']])`
 * `r CRANpkg('knitcitations')` `r citep(bib[['knitcitations']])`
 * `r Biocpkg('org.Hs.eg.db')` `r citep(bib[['org.Hs.eg.db']])`
 * `r CRANpkg('readr')` `r citep(bib[['readr']])`
