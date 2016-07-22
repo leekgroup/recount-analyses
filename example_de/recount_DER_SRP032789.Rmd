@@ -207,8 +207,7 @@ regions_counts_sig <- regions_counts[regions_counts$q.mod < 0.05, ]
 # top <- regions_counts_sig[order(regions_counts_sig$area, decreasing = TRUE)[1:100], ]
 
 ## Annotate significant regions
-txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
-genes <- annotateTranscripts(TxDb.Hsapiens.UCSC.hg38.knownGene, annotation="org.Hs.eg.db")
+genes <- annotateTranscripts(TxDb.Hsapiens.UCSC.hg38.knownGene)
 
 ## Match detected regions with known gene annotation
 ## Warning: This can take some time
@@ -381,10 +380,6 @@ regions <- regions[order(regions$p.mod), ]
     
 ## make region plots
 tIndexes = split(1:length(rse$group), rse$group)
-
-## Annotation database to use
-txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
-genes <- annotateTranscripts(txdb = txdb)
 
 ## Get required information for the plots
 ## Annotate regions
