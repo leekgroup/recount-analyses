@@ -9,13 +9,6 @@ output:
     toc: true
 ---
 
-```{r docSetup, dev = 'CairoPNG', echo = FALSE}
-## Set device option
-library('knitr')
-opts_chunk$set(dev = 'CairoPNG')
-```
-
-
 ```{r 'setup', echo = FALSE, warning = FALSE, message = FALSE}
 timestart <- Sys.time()
 
@@ -142,14 +135,14 @@ eid2ens <- select(org.Hs.eg.db, gtexMap$EnsemblGeneID,
     "ENTREZID", "ENSEMBL")
 eid2ens <- CharacterList(split(eid2ens$ENTREZID, eid2ens$ENSEMBL))
 gtexMap$EntrezID <- eid2ens[gtexMap$EnsemblGeneID]
-table(elementLengths(gtexMap$EntrezID))
-table(gtexMap$gene_type, elementLengths(gtexMap$EntrezID) == 1)
+table(elementNROWS(gtexMap$EntrezID))
+table(gtexMap$gene_type, elementNROWS(gtexMap$EntrezID) == 1)
 ```
 
 Basically, only protein coding genes have a ENTREZ id.  We keep only the protein coding genes which are uniquely mapped to an ENTREZ id.
 
 ```{r keepMapping}
-eidIndex <- which(elementLengths(gtexMap$EntrezID)==1 &
+eidIndex <- which(elementNROWS(gtexMap$EntrezID)==1 &
     gtexMap$gene_type == "protein_coding")
 gtexMap <- gtexMap[eidIndex,]
 gtexCounts <- gtexCounts[eidIndex,]
@@ -170,7 +163,7 @@ dim(gtexCounts)
 
 Let's load data from Recount.
 
-```{r}
+```{r 'scale'}
 rse_gene_scale <- scale_counts(rse_gene)
 recountCounts <- assays(rse_gene_scale)$counts
 recountMap <- rowRanges(rse_gene_scale)
@@ -212,21 +205,19 @@ mean(normCors >= 0.99, na.rm = TRUE)
 ```
 
 ```{r normCountsPlot, plot = TRUE}
-pdf(file = "normCorrelations.pdf")
 dens <- density(normCors, from = -1,
 	to = 1, na.rm = TRUE, n = 4096)
 plot(dens, xlab = "Pearson correlation",
 	main = "Size-scaled counts")
 plot(dens, xlab = "Pearson correlation",
      main = "Size-scaled counts", xlim = c(0.9,1))
-dev.off()
 ```
 
 # Differential expression
 
 Between colon and blood
 
-```{r 'incomplete', eval = FALSE}
+```{r 'find_tissue'}
 indTissue = c(which(gtexPd2$smts == "Colon"),
 	which(gtexPd2$smtsd == "Whole Blood"))
 gtexPd2_sub = gtexPd2[indTissue,]
