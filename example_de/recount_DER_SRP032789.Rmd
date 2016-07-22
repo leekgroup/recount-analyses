@@ -46,7 +46,7 @@ bib <- read.bibtex('recount_DER_SRP032789.bib')
 names(bib) <- names(bibs)
 ```
 
-Here is an example of how to download and analyze a `RangedSummarizedExperiment` object. While differential expression analysis of RNA-Seq data is often done at the gene and/or exon level, there is utility in looking for differential expression using an annotation-indepenent approach. Here, without the aid of any annotation, expressed regions are summarized, filtered, and differential expression analyses are carried out. These results are compared to those from gene- and exon-level analyses carried out on the same data to assess whether additional information can be garnered from this approach.
+Here is an example of how to download and analyze a `RangedSummarizedExperiment` object. While differential expression analysis of RNA-Seq data is often done at the gene and/or exon level, there is utility in looking for differential expression using an annotation-indepenent approach. Here, without the aid of any annotation, expressed regions are summarized, filtered, and differential expression analyses are carried out. These results are compared to those from annotation-dependent analyses carried out on the same data to assess whether additional information can be garnered from this approach.
 Data herein come from triple negative and HER2-positive breast cancer samples from SRA study id [SRP032798](http://trace.ncbi.nlm.nih.gov/Traces/sra/?study=SRP032798). 
 
 We first load the required packages.
@@ -62,6 +62,7 @@ library('topGO')
 library('matrixStats')
 library('RSkittleBrewer')
 library('derfinder')
+library('derfinderPlot')
 library('BiocParallel')
 library('GenomicRanges')
 library('bumphunter')
@@ -71,6 +72,7 @@ library('TxDb.Hsapiens.UCSC.hg38.knownGene')
 trop <- RSkittleBrewer('tropical')[c(1, 2)]
 ```
 
+# Download study data
 Expressed region data are downloaded for each chromosome and summarized into a count matrix (`covMat`) where each region is a row and each sample a column.
  
 # Expressed regions
@@ -112,6 +114,7 @@ if(!file.exists('covMat_SRP032789.Rdata')) {
 
 ```
 
+# Obtain count data 
 After summarizing data across expressed regions, data are filtered to only include samples of interest (TNBC and HER2+ tumor samples, (`covMat_filt`) and regions with greater than 5 mean read counts across samples (`counts`). 
 
 
@@ -151,6 +154,7 @@ dim(counts)
 regions_counts <- regions[filter, ]
 ```
 
+# DE analysis
 Differential expression analysis is carried out at the expressed-region level using `voom`
 and `limma`. Results for each region are plotted using a volcano plot of the $log_2(fold change)$ and $-log_{10}(p-value)$.
 
@@ -192,7 +196,6 @@ title('Volcano plot: TNBC vs. HER2+ in SRP032789 (er level)')
 
 
 # Annotate regions with genomic information
-
 After detecting regions differentially expressed between TNBC and HER2+ samples, we can annotate where in the genome these regions are found and compare them back to the results from the gene- and exon-level differential expression analyses to determine what new information is gained by utilziing expressed region level data.
 
 
@@ -217,9 +220,25 @@ annotation_der <- matchGenes(regions_counts_sig, genes)
 regions_annotated <- cbind(regions_counts_sig, annotation_der)
 ```
 
-There are `r length(regions_counts_sig)` statistically significant regions detected (`q < 0.05`). 
+There are `r length(regions_counts_sig)` statistically significant regions detected (`q < 0.05`). We can use a venn diagram to visually represent where they are found in the genome.
 
+```{r visualizing-DERs, fig.height = 8, fig.width = 8}
 
+## Get Annotation
+## Genomic state created by https://github.com/nellore/runs/blob/master/gtex/DER_analysis/coverageMatrix/genomicState/hg38-genomicState.R
+#### Leo! NEED to change this? ####
+load('/dcl01/leek/data/gtex_work/runs/gtex/DER_analysis/coverageMatrix/genomicState/genomicState.Hsapiens.BioMart.ENSEMBLMARTENSEMBL.GRCh38.p5.Rdata')
+gs_raw <- genomicState.Hsapiens.BioMart.ENSEMBLMARTENSEMBL.GRCh38.p5$fullGenome
+gs <- renameSeqlevels(gs_raw, paste0('chr', seqlevels(gs_raw)))
+gs_exons <- gs[gs$theRegion =="exon"]
+
+## Make venn diagram
+## Venn Diagram for significant DERs (q<0.05)
+annoRegs_sigDER <- annotateRegions(regions_counts_sig, gs, minoverlap = 20)
+#pdf(file = 'plots/VennDiagram_sigDERs.pdf')
+vennRegions(annoRegs_sigDER, main = 'Significant DERs (q<0.05)', counts.col = trop[1])
+#dev.off()
+```
 
 # Gene level analysis
 In order to compare these differentially expressed regions with gene-level results, we must carry out differential expression in these same data at the gene level.
@@ -240,6 +259,7 @@ load(file.path(project_info$project, 'rse_gene.Rdata'))
 rse_gene
 ```
 
+# QC data
 Downloaded count data are first scaled to take into account differing coverage between samples. Phenotype data (`pheno`) are obtained and ordered to match the sample order of the gene expression data (`rse_gene`). Only those samples that are HER2-positive or TNBC are included for analysis. Prior to differential gene expression analysis, count data are obtained in matrix format and then filtered to only include those genes with greater than five average normalized counts across all samples.
 
 ```{r filter-genes}
@@ -276,6 +296,7 @@ dim(counts)
 counts_genes <- counts
 ```
 
+# DE analysis : gene-level
 Using `limma` and `voom`, differentially expressed genes are detected at the gene level.
 
 ```{r voom-genes, fig.height = 8, fig.width = 8}
@@ -296,19 +317,18 @@ rownames(res.genes) <- rownames(counts)
 sum(res.genes$q.mod < 0.05)
 ```
 
-
-
-# Determine DERs not detected by gene level analysis
+# Compare DER findings to gene-level analysis
 By avoiding using gene or exon-level annotation for quantification, regions usually excluded from analysis can be included. Here, the same data set is utilized for differential expression; however, we determine the number of signficantly differentially expressed regions (DERs, q<0.05) that do not overlap any gene. These regions are places within the genome that would be completely missed by the common gene-level analyses. 
 
 ```{r DERs-undetected, fig.height = 8, fig.width = 8}
+## Determine DERs not detected by gene level analysis
 ## Get DEGs into GRanges object format
 genes_GRanges <- SummarizedExperiment::rowRanges(rse_gene[filter, ])
 genes_GRanges$log2FC <- res.genes$log2FC
 genes_GRanges$p.mod <- res.genes$p.mod
 genes_GRanges$q.mod <- res.genes$q.mod
 
-## For each region, determine if region overlaps with a gene
+## For each region, determine if region overlaps with a gene included in the gene-level analysis
 overlap <-countOverlaps(regions_counts_sig,genes_GRanges,type="any")
 overlap <-countOverlaps(regions_counts,genes_GRanges,type="any")
 
@@ -319,7 +339,7 @@ regions_counts_notingene <- regions_counts[overlap==0]
 ## For significant DERs (q<0.05), how many sites do not fall within a gene 
 ## (and thus would not be detected by gene-level analyses
  
-## number of DERs that do not overlap with any genes
+## number of DERs that do not overlap with genes in gene-level analysis
 length(regions_counts_notingene[regions_counts_notingene$q.mod<0.05])
 
 ## Volcano plot of DERs (that do not overlap with genes)
@@ -335,9 +355,92 @@ abline(h = seq(0, 23, 1), col = 'lightgray', lty = 'dotted')
 points(regions_counts_notingene$log2FC, -log10(regions_counts_notingene$p.mod), pch = 19, col = trop[2])
 title('Volcano plot: TNBC vs. HER2+ in SRP032789 (DERs not in genes)')
 ```
+There are `length(regions_counts_notingene[regions_counts_notingene$q.mod<0.05])` DERs that do not overlap with genes included in the gene-level analysis.
+
+These range in size from `min(width(regions_counts_notingene))` bps to `max(width(regions_counts_notingene))` bps in length, with a median length of `median(width(regions_counts_notingene))` bps.
+
+# Compare DERs to known genomic annotation
+Beyond an interest in those regions not detected in the gene-level analysis, we are also interested in those regions that do not overlap any annotated gene. First, we quantify where DERs are found within the genome that do not overlap any known exons. Then, we highlight single locus coverage plots for a few of the longest DERs.
 
 
-There are `length(regions_counts_notingene[regions_counts_notingene$q.mod<0.05])` DERs that do not overlap with known genes.
+```{r visualizing-DERs-that-do-not-overlap-annotated-exons, fig.height = 8, fig.width = 8}
+
+## For each region, determine if region overlaps with a gene included
+overlapANY <-countOverlaps(regions_counts,gs_exons,type="any")
+
+regions_counts$overlapANY <- overlapANY
+regions_counts_ingeneANY <- regions_counts[regions_counts$overlapANY>0]
+regions_counts_notinANYgene <- regions_counts[regions_counts$overlapANY==0]
+
+## Number of DERs that do not overlap with any genes
+length(regions_counts_notinANYgene[regions_counts_notinANYgene$q.mod<0.05])
+
+
+## Get top 1% longest regions outside of genes to visualize
+regions = subset(regions_counts_notinANYgene, width(regions_counts_notinANYgene) > quantile(width(regions_counts_notinANYgene),0.99))
+#order so most significant are plotted first
+regions <- regions[order(regions$p.mod), ]
+    
+## make region plots
+tIndexes = split(1:length(rse$group), rse$group)
+
+## Annotation database to use
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+genes <- annotateTranscripts(txdb = txdb)
+
+## Get required information for the plots
+## Annotate regions
+annoRegs <- annotateRegions(regions, gs, minoverlap = 1)
+
+## Load full coverage
+SRP032789_urls <- subset(recount_url, project == 'SRP032789' & file_name != 'mean_SRP032789.bw')
+#### Leo! change recount_url$path to recount_url$url for submission ####
+files <- SRP032789_urls$path[grepl('bw$', SRP032789_urls$url)]
+names(files) <- gsub('.bw', '', SRP032789_urls$file_name[grepl('bw$', SRP032789_urls$url)])
+
+## Only include TNBC and HER2+ samples
+files <- subset(files, names(files) %in% colnames(covMat_filt))
+
+## Obtain fullCoverage matrix for all chromosomes
+which <- regions
+fullCov <- fullCoverage(files = files, chrs =c('chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7', 'chr8', 'chr9', 'chr10', 'chr11', 'chr12', 'chr13', 'chr14', 'chr15', 'chr16', 'chr17', 'chr18', 'chr19', 'chr20', 'chr21', 'chr22', 'chrX', 'chrY'), which = which)
+
+## Find nearest annotation with bumphunter::matchGenes()
+nearestAnnotation <- matchGenes(x = regions, subject = genes)
+
+## Get the region coverage
+geneRegionCov <- getRegionCoverage(fullCov=fullCov, regions=regions,
+	targetSize = 4e+07, totalMapped=colData(rse)$reads_aligned)
+geneRegionCovMeans = lapply(geneRegionCov, function(x) {
+	cat(".")
+	sapply(tIndexes, function(ii) rowMeans(x[,ii]))
+})
+
+## Plot region coverage for the longest DERs 
+### Leo! Not sure we need to include this?
+pdf('plots/DERs_notingene.pdf', h = 5, w = 7)
+plotRegionCoverage(regions=regions, 
+	regionCoverage=geneRegionCovMeans,
+	groupInfo= factor(unique(rse$group)), colors = trop, 
+	nearestAnnotation=nearestAnnotation,
+	annotatedRegions=annoRegs,
+	ask=FALSE,	 whichRegions=1:10, verbose=FALSE, 
+	txdb = txdb)
+dev.off()
+
+## Example of DER outside of any exonic region
+plotRegionCoverage(regions=regions, 
+	regionCoverage=geneRegionCovMeans,
+	groupInfo= factor(unique(rse$group)), colors = trop, 
+	nearestAnnotation=nearestAnnotation,
+	annotatedRegions=annoRegs,
+	ask=FALSE,	 whichRegions=6, verbose=FALSE, 
+	txdb = txdb)
+
+```
+There are `length(regions_counts_notinANYgene[regions_counts_notinANYgene$q.mod<0.05])` DERs that do not overlap with any known genes.
+
+These range in size from `min(width(regions_counts_notinANYgene))` bps to `max(width(regions_counts_notinANYgene))` bps in length, with a median length of `median(width(regions_counts_notinANYgene))` bps.
 
 
 
