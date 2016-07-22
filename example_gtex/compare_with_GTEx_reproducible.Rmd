@@ -166,15 +166,15 @@ gtexMap <- gtexMap[geneMatch[!is.na(geneMatch)], ]
 gtexCounts <- gtexCounts[geneMatch[!is.na(geneMatch)], ]
 stopifnot(all(rownames(gtexCounts) == rownames(recountCounts)))
 
-save(gtexCounts, gtexMap, gtexPd, recountCounts, recountMap, file =
-    "GTEx_websiteAndRecount_EntrezMatched_17559_vs_8551_reproduced.Rdata",
-    compress = TRUE)
+# save(gtexCounts, gtexMap, gtexPd, recountCounts, recountMap, file =
+#    "GTEx_websiteAndRecount_EntrezMatched_17559_vs_8551_reproduced.Rdata",
+#    compress = TRUE)
 ```
 
 # Comparison
 
 ```{r loadMap}
-load("GTEx_websiteAndRecount_EntrezMatched_17559_vs_8551_reproduced.Rdata")
+# load("GTEx_websiteAndRecount_EntrezMatched_17559_vs_8551_reproduced.Rdata")
 gtexCounts <- as.matrix(gtexCounts)
 ind = which(colSums(is.na(gtexCounts)) == 0)
 gtexCounts2 <- log2(sweep(gtexCounts, MARGIN = 2, FUN = "/", 
