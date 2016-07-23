@@ -35,9 +35,7 @@ bibs <- c(
     RSkittleBrewer = citation('RSkittleBrewer'),
     SummarizedExperiment = citation('SummarizedExperiment'),
     topGO = citation('topGO'),
-    voom = RefManageR::BibEntry('article', key = 'voom', author = 'CW Law and Y Chen and W Shi and GK Smyth', year = '2014', 
-                                title = 'Voom: precision weights unlock linear model analysis tools for RNA-seq read counts', 
-                                journal = 'Genome Biology', volume = '15', pages = 'R29')
+    voom = RefManageR::BibEntry('article', key = 'voom', author = 'CW Law and Y Chen and W Shi and GK Smyth', year = '2014', title = 'Voom: precision weights unlock linear model analysis tools for RNA-seq read counts', journal = 'Genome Biology', volume = '15', pages = 'R29')
 )
 
 write.bibtex(bibs,

@@ -101,9 +101,9 @@ project_info1</code></pre>
 <pre class="r"><code>## Download the gene-level RangedSummarizedExperiment data
 if(!file.exists(file.path('SRP019936', 'rse_gene.Rdata'))) {
     download_study(project_info1$project)
-}
-
-## Load the data
+}</code></pre>
+<pre><code>## 2016-07-22 20:22:38 downloading file rse_gene.Rdata to SRP019936</code></pre>
+<pre class="r"><code>## Load the data
 load(file.path(project_info1$project, 'rse_gene.Rdata'))
 rse_gene1 &lt;- rse_gene
 
@@ -445,9 +445,9 @@ project_info2 &lt;- abstract_search('To define the digital transcriptome of thre
 ## Download the gene-level RangedSummarizedExperiment data
 if(!file.exists(file.path('SRP032789', 'rse_gene.Rdata'))) {
     download_study(project_info2$project)
-}
-
-## Load the data
+}</code></pre>
+<pre><code>## 2016-07-22 20:22:49 downloading file rse_gene.Rdata to SRP032789</code></pre>
+<pre class="r"><code>## Load the data
 load(file.path(project_info2$project, 'rse_gene.Rdata'))
 rse_gene2 &lt;- rse_gene
 
@@ -488,9 +488,9 @@ rse2 </code></pre>
 ## metadata(0):
 ## assays(1): counts
 ## rownames(23779): 1 10 ... 9994 9997
-## rowData names(3): gene_id bp_length symbol
+## rowData names(2): gene_id bp_length
 ## colnames(11): SRR1027171 SRR1027173 ... SRR1027187 SRR1027172
-## colData names(22): project sample ... characteristics group</code></pre>
+## colData names(19): project sample ... bigwig_file group</code></pre>
 <pre class="r"><code>## Obtain count matrix without filtering
 counts2 &lt;- assays(rse2)$counts
 dim(counts2)</code></pre>
@@ -759,10 +759,10 @@ legend('topleft', pch = 19, col = trop[c(1, 2)], c(&quot;p-value&quot;, &quot;p-
 </p>
 <pre class="r"><code>## Time spent creating this report:
 diff(c(timestart, Sys.time()))</code></pre>
-<pre><code>## Time difference of 1.204711 mins</code></pre>
+<pre><code>## Time difference of 1.396891 mins</code></pre>
 <pre class="r"><code>## Date this report was generated
 message(Sys.time())</code></pre>
-<pre><code>## 2016-07-22 16:36:50</code></pre>
+<pre><code>## 2016-07-22 20:23:57</code></pre>
 <pre class="r"><code>## Reproducibility info
 options(width = 120)
 devtools::session_info()</code></pre>
@@ -789,7 +789,7 @@ devtools::session_info()</code></pre>
 ##  evaluate               0.9      2016-04-29 CRAN (R 3.3.0)                              
 ##  fdrtool                1.2.15   2015-07-08 CRAN (R 3.3.0)                              
 ##  formatR                1.4      2016-05-09 CRAN (R 3.3.0)                              
-##  GenomeInfoDb         * 1.9.1    2016-06-07 Bioconductor                                
+##  GenomeInfoDb         * 1.9.4    2016-07-14 Bioconductor                                
 ##  GenomicRanges        * 1.25.9   2016-06-26 Bioconductor                                
 ##  ggplot2                2.1.0    2016-03-01 CRAN (R 3.2.4)                              
 ##  gtable                 0.2.0    2016-02-26 CRAN (R 3.2.3)                              
@@ -800,7 +800,7 @@ devtools::session_info()</code></pre>
 ##  knitcitations        * 1.0.7.1  2016-06-06 Github (cboettig/knitcitations@76c128a)     
 ##  knitr                  1.13     2016-05-09 CRAN (R 3.3.0)                              
 ##  lattice                0.20-33  2015-07-14 CRAN (R 3.3.0)                              
-##  limma                * 3.29.14  2016-06-29 Bioconductor                                
+##  limma                * 3.29.16  2016-07-21 Bioconductor                                
 ##  locfit                 1.5-9.1  2013-04-20 CRAN (R 3.1.0)                              
 ##  lpsymphony             1.1.2    2016-05-27 Bioconductor (R 3.3.0)                      
 ##  lubridate              1.5.6    2016-04-06 CRAN (R 3.3.0)                              
@@ -812,7 +812,7 @@ devtools::session_info()</code></pre>
 ##  plyr                   1.8.4    2016-06-08 CRAN (R 3.3.0)                              
 ##  qvalue               * 2.5.2    2016-05-27 Bioconductor                                
 ##  R6                     2.1.2    2016-01-26 CRAN (R 3.2.3)                              
-##  Rcpp                   0.12.5   2016-05-14 CRAN (R 3.3.0)                              
+##  Rcpp                   0.12.6   2016-07-19 CRAN (R 3.3.0)                              
 ##  RCurl                  1.95-4.8 2016-03-01 CRAN (R 3.2.4)                              
 ##  recount              * 0.99.0   2016-06-06 Github (leekgroup/recount@bfa4681)          
 ##  RefManageR             0.10.13  2016-04-04 CRAN (R 3.3.0)                              
@@ -820,7 +820,7 @@ devtools::session_info()</code></pre>
 ##  RJSONIO                1.3-0    2014-07-28 CRAN (R 3.2.0)                              
 ##  rmarkdown              1.0      2016-07-08 CRAN (R 3.3.0)                              
 ##  RSkittleBrewer       * 1.1      2016-06-07 Github (alyssafrazee/RSkittleBrewer@230d1d0)
-##  S4Vectors            * 0.11.9   2016-07-08 Bioconductor                                
+##  S4Vectors            * 0.11.10  2016-07-21 Bioconductor                                
 ##  scales                 0.4.0    2016-02-26 CRAN (R 3.2.3)                              
 ##  slam                   0.1-35   2016-06-14 CRAN (R 3.3.0)                              
 ##  stringi                1.1.1    2016-05-27 CRAN (R 3.3.0)                              

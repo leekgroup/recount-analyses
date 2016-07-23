@@ -108,12 +108,12 @@ rse_gene</code></pre>
 ## metadata(0):
 ## assays(1): counts
 ## rownames(23779): 1 10 ... 9994 9997
-## rowData names(3): gene_id bp_length symbol
+## rowData names(2): gene_id bp_length
 ## colnames(20): SRR1027171 SRR1027173 ... SRR1027190 SRR1027172
-## colData names(21): project sample ... title characteristics</code></pre>
+## colData names(18): project sample ... avg_read_length bigwig_file</code></pre>
 <pre class="r"><code>## This is the phenotype data provided by the recount project
 colData(rse_gene)</code></pre>
-<pre><code>## DataFrame with 20 rows and 21 columns
+<pre><code>## DataFrame with 20 rows and 18 columns
 ##                project      sample  experiment         run
 ##            &lt;character&gt; &lt;character&gt; &lt;character&gt; &lt;character&gt;
 ## SRR1027171   SRP032789   SRS500214   SRX374850  SRR1027171
@@ -127,32 +127,32 @@ colData(rse_gene)</code></pre>
 ## SRR1027189   SRP032789   SRS500232   SRX374868  SRR1027189
 ## SRR1027190   SRP032789   SRS500233   SRX374869  SRR1027190
 ## SRR1027172   SRP032789   SRS500215   SRX374851  SRR1027172
-##            read_count_as_reported_by_sra reads_downloaded
-##                                &lt;integer&gt;        &lt;integer&gt;
-## SRR1027171                      88869444         88869444
-## SRR1027173                     107812596        107812596
-## SRR1027174                      98563260         98563260
-## SRR1027175                      91327892         91327892
-## SRR1027176                      96513572         96513572
-## ...                                  ...              ...
-## SRR1027187                      75260678         75260678
-## SRR1027188                      65709192         65709192
-## SRR1027189                      65801392         65801392
-## SRR1027190                      74356276         74356276
-## SRR1027172                      80986440         58902122
-##            proportion_of_reads_reported_by_sra_downloaded paired_end
-##                                                 &lt;numeric&gt;  &lt;logical&gt;
-## SRR1027171                                              1       TRUE
-## SRR1027173                                              1       TRUE
-## SRR1027174                                              1       TRUE
-## SRR1027175                                              1       TRUE
-## SRR1027176                                              1       TRUE
-## ...                                                   ...        ...
-## SRR1027187                                      1.0000000       TRUE
-## SRR1027188                                      1.0000000       TRUE
-## SRR1027189                                      1.0000000       TRUE
-## SRR1027190                                      1.0000000       TRUE
-## SRR1027172                                      0.7273084       TRUE
+##            read_count_as_reported_by_sra reads_aligned
+##                                &lt;integer&gt;     &lt;integer&gt;
+## SRR1027171                      88869444      88869444
+## SRR1027173                     107812596     107812596
+## SRR1027174                      98563260      98563260
+## SRR1027175                      91327892      91327892
+## SRR1027176                      96513572      96513572
+## ...                                  ...           ...
+## SRR1027187                      75260678      75260678
+## SRR1027188                      65709192      65709192
+## SRR1027189                      65801392      65801392
+## SRR1027190                      74356276      74356276
+## SRR1027172                      80986440      58902122
+##            proportion_of_reads_reported_by_sra_aligned paired_end
+##                                              &lt;numeric&gt;  &lt;logical&gt;
+## SRR1027171                                           1       TRUE
+## SRR1027173                                           1       TRUE
+## SRR1027174                                           1       TRUE
+## SRR1027175                                           1       TRUE
+## SRR1027176                                           1       TRUE
+## ...                                                ...        ...
+## SRR1027187                                   1.0000000       TRUE
+## SRR1027188                                   1.0000000       TRUE
+## SRR1027189                                   1.0000000       TRUE
+## SRR1027190                                   1.0000000       TRUE
+## SRR1027172                                   0.7273084       TRUE
 ##            sra_misreported_paired_end mapped_read_count        auc
 ##                             &lt;logical&gt;         &lt;integer&gt;  &lt;numeric&gt;
 ## SRR1027171                      FALSE          86949307 5082692127
@@ -166,89 +166,63 @@ colData(rse_gene)</code></pre>
 ## SRR1027189                      FALSE          65328289 4858587600
 ## SRR1027190                      FALSE          73911898 5501089036
 ## SRR1027172                      FALSE          57523391 3351013968
-##            sharq_beta_tissue sharq_beta_cell_type
-##                  &lt;character&gt;          &lt;character&gt;
-## SRR1027171            breast                  esc
-## SRR1027173            breast                  esc
-## SRR1027174            breast                  esc
-## SRR1027175            breast                  esc
-## SRR1027176            breast                  esc
-## ...                      ...                  ...
-## SRR1027187            breast                  esc
-## SRR1027188            breast                  esc
-## SRR1027189            breast                  esc
-## SRR1027190            breast                  esc
-## SRR1027172            breast                  esc
-##            biosample_submission_date biosample_publication_date
-##                          &lt;character&gt;                &lt;character&gt;
-## SRR1027171   2013-11-07T12:40:22.203    2013-11-08T01:11:17.160
-## SRR1027173   2013-11-07T12:40:32.283    2013-11-08T01:11:14.827
-## SRR1027174   2013-11-07T12:40:28.283    2013-11-08T01:11:52.283
-## SRR1027175   2013-11-07T12:40:34.343    2013-11-08T01:11:15.963
-## SRR1027176   2013-11-07T12:40:36.303    2013-11-08T01:11:46.430
-## ...                              ...                        ...
-## SRR1027187   2013-11-07T12:40:56.180    2013-11-08T01:11:29.587
-## SRR1027188   2013-11-07T12:40:58.170    2013-11-08T01:12:06.660
-## SRR1027189   2013-11-07T12:40:20.227    2013-11-08T01:11:33.080
-## SRR1027190   2013-11-07T12:40:18.090    2013-11-08T01:12:11.320
-## SRR1027172   2013-11-07T12:40:26.217    2013-11-08T01:11:45.250
-##              biosample_update_date avg_read_length geo_accession
-##                        &lt;character&gt;       &lt;integer&gt;   &lt;character&gt;
-## SRR1027171 2014-03-07T16:09:38.542             120    GSM1261016
-## SRR1027173 2014-03-07T16:09:38.698             120    GSM1261018
-## SRR1027174 2014-03-07T16:09:38.637             120    GSM1261019
-## SRR1027175 2014-03-07T16:09:38.731             120    GSM1261020
-## SRR1027176 2014-03-07T16:09:38.768             120    GSM1261021
-## ...                            ...             ...           ...
-## SRR1027187 2014-03-07T16:09:39.093             120    GSM1261032
-## SRR1027188 2014-03-07T16:09:39.130             150    GSM1261033
-## SRR1027189 2014-03-07T16:09:38.498             150    GSM1261034
-## SRR1027190 2014-03-07T16:09:38.469             150    GSM1261035
-## SRR1027172 2014-03-07T16:09:38.604              87    GSM1261017
-##              bigwig_file       title
-##              &lt;character&gt; &lt;character&gt;
-## SRR1027171 SRR1027171.bw       TNBC1
-## SRR1027173 SRR1027173.bw       TNBC3
-## SRR1027174 SRR1027174.bw       TNBC4
-## SRR1027175 SRR1027175.bw       TNBC5
-## SRR1027176 SRR1027176.bw       TNBC6
-## ...                  ...         ...
-## SRR1027187 SRR1027187.bw      HER2-5
-## SRR1027188 SRR1027188.bw        NBS1
-## SRR1027189 SRR1027189.bw        NBS2
-## SRR1027190 SRR1027190.bw        NBS3
-## SRR1027172 SRR1027172.bw       TNBC2
-##                                   characteristics
-##                                   &lt;CharacterList&gt;
-## SRR1027171          tumor type: TNBC Breast Tumor
-## SRR1027173          tumor type: TNBC Breast Tumor
-## SRR1027174          tumor type: TNBC Breast Tumor
-## SRR1027175          tumor type: TNBC Breast Tumor
-## SRR1027176          tumor type: TNBC Breast Tumor
-## ...                                           ...
-## SRR1027187 tumor type: HER2 Positive Breast Tumor
-## SRR1027188    tumor type: Normal Breast Organoids
-## SRR1027189    tumor type: Normal Breast Organoids
-## SRR1027190    tumor type: Normal Breast Organoids
-## SRR1027172          tumor type: TNBC Breast Tumor</code></pre>
+##            sharq_tissue sharq_cell_type biosample_submission_date
+##             &lt;character&gt;     &lt;character&gt;               &lt;character&gt;
+## SRR1027171       breast             esc   2013-11-07T12:40:22.203
+## SRR1027173       breast             esc   2013-11-07T12:40:32.283
+## SRR1027174       breast             esc   2013-11-07T12:40:28.283
+## SRR1027175       breast             esc   2013-11-07T12:40:34.343
+## SRR1027176       breast             esc   2013-11-07T12:40:36.303
+## ...                 ...             ...                       ...
+## SRR1027187       breast             esc   2013-11-07T12:40:56.180
+## SRR1027188       breast             esc   2013-11-07T12:40:58.170
+## SRR1027189       breast             esc   2013-11-07T12:40:20.227
+## SRR1027190       breast             esc   2013-11-07T12:40:18.090
+## SRR1027172       breast             esc   2013-11-07T12:40:26.217
+##            biosample_publication_date   biosample_update_date
+##                           &lt;character&gt;             &lt;character&gt;
+## SRR1027171    2013-11-08T01:11:17.160 2014-03-07T16:09:38.542
+## SRR1027173    2013-11-08T01:11:14.827 2014-03-07T16:09:38.698
+## SRR1027174    2013-11-08T01:11:52.283 2014-03-07T16:09:38.637
+## SRR1027175    2013-11-08T01:11:15.963 2014-03-07T16:09:38.731
+## SRR1027176    2013-11-08T01:11:46.430 2014-03-07T16:09:38.768
+## ...                               ...                     ...
+## SRR1027187    2013-11-08T01:11:29.587 2014-03-07T16:09:39.093
+## SRR1027188    2013-11-08T01:12:06.660 2014-03-07T16:09:39.130
+## SRR1027189    2013-11-08T01:11:33.080 2014-03-07T16:09:38.498
+## SRR1027190    2013-11-08T01:12:11.320 2014-03-07T16:09:38.469
+## SRR1027172    2013-11-08T01:11:45.250 2014-03-07T16:09:38.604
+##            avg_read_length   bigwig_file
+##                  &lt;integer&gt;   &lt;character&gt;
+## SRR1027171             120 SRR1027171.bw
+## SRR1027173             120 SRR1027173.bw
+## SRR1027174             120 SRR1027174.bw
+## SRR1027175             120 SRR1027175.bw
+## SRR1027176             120 SRR1027176.bw
+## ...                    ...           ...
+## SRR1027187             120 SRR1027187.bw
+## SRR1027188             150 SRR1027188.bw
+## SRR1027189             150 SRR1027189.bw
+## SRR1027190             150 SRR1027190.bw
+## SRR1027172              87 SRR1027172.bw</code></pre>
 <pre class="r"><code>## At the gene level, the row data includes the names of the genes and
 ## the sum of the reduced exons widths, which can be used for taking into
 ## account the gene length.
 rowData(rse_gene)</code></pre>
-<pre><code>## DataFrame with 23779 rows and 3 columns
-##           gene_id bp_length      symbol
-##       &lt;character&gt; &lt;integer&gt; &lt;character&gt;
-## 1               1      4027        A1BG
-## 2              10      1317        NAT2
-## 3             100      1532         ADA
-## 4            1000      4473        CDH2
-## 5       100008589      5071     RNA28S5
-## ...           ...       ...         ...
-## 23775        9991      8234       PTBP3
-## 23776        9992       803       KCNE2
-## 23777        9993      4882       DGCR2
-## 23778        9994      6763    CASP8AP2
-## 23779        9997      1393        SCO2</code></pre>
+<pre><code>## DataFrame with 23779 rows and 2 columns
+##           gene_id bp_length
+##       &lt;character&gt; &lt;integer&gt;
+## 1               1      4027
+## 2              10      1317
+## 3             100      1532
+## 4            1000      4473
+## 5       100008589      5071
+## ...           ...       ...
+## 23775        9991      8234
+## 23776        9992       803
+## 23777        9993      4882
+## 23778        9994      6763
+## 23779        9997      1393</code></pre>
 <p>Downloaded count data are first scaled to take into account differing coverage between samples. Phenotype data (<code>pheno</code>) are obtained and ordered to match the sample order of the gene expression data (<code>rse_gene</code>). Only those samples that are HER2-positive or TNBC are included for analysis. Prior to differential gene expression analysis, count data are obtained in matrix format and then filtered to only include those genes with greater than five average normalized counts across all samples.</p>
 <pre class="r"><code>## Scale counts by taking into account the total coverage per sample
 rse &lt;- scale_counts(rse_gene)
@@ -1433,7 +1407,7 @@ head(bpres_jx, n = 10)</code></pre>
 ## 9        557         405   352.70 5.8e-05
 ## 10        53          43    33.56 0.00017</code></pre>
 <pre class="r"><code>## Load p-values from DER anaysis
-load(file.path(project_info$project, 'AnnotatedDERs.Rdata'))
+load('AnnotatedDERs.Rdata')
 p.mod &lt;- annotatedDERs
 
 ## Obtain geneIDs
@@ -1738,10 +1712,10 @@ legend('topleft', pch = 19, col = trop[c(1, 2, 3)], c(&quot;exon&quot;, &quot;ju
 </p>
 <pre class="r"><code>## Time spent creating this report:
 diff(c(timestart, Sys.time()))</code></pre>
-<pre><code>## Time difference of 17.19836 mins</code></pre>
+<pre><code>## Time difference of 17.51912 mins</code></pre>
 <pre class="r"><code>## Date this report was generated
 message(Sys.time())</code></pre>
-<pre><code>## 2016-07-22 18:09:49</code></pre>
+<pre><code>## 2016-07-22 20:45:08</code></pre>
 <pre class="r"><code>## Reproducibility info
 options(width = 120)
 devtools::session_info()</code></pre>
