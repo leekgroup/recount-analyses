@@ -14,7 +14,7 @@ timestart <- Sys.time()
 
 ## Bib setup
 library('knitcitations')
-
+    
 ## Load knitcitations with a clean bibliography
 cleanbib()
 cite_options(hyperlink = 'to.doc', citation_format = 'text', style = 'html')
