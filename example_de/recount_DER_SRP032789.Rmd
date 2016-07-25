@@ -157,7 +157,7 @@ regions_counts <- regions[filter, ]
 
 # DE analysis
 Differential expression analysis is carried out at the expressed-region level using `voom`
-and `limma`. Results for each region are plotted using a volcano plot of the log2(fold change) and -log10(p-value).
+and `limma`. Results for each region are plotted using a volcano plot to compare the effect size of the differential expression [ as measured by the $log_2(fold-change)$ in expression ] and its significance [ $-log_10(p-value)$ ].
 
 
 ```{r voom-er, fig.height = 8, fig.width = 8}
