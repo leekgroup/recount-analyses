@@ -75,10 +75,9 @@ trop <- RSkittleBrewer('tropical')[c(1, 2)]
 ```
 
 # Download study data
+```{r download-study-data}
 Expressed region data are downloaded for each chromosome and summarized into a count matrix (`covMat`) where each region is a row and each sample a column.
- 
-# Expressed regions
-```{r er}
+
 chrs <- paste0('chr', c(1:22, 'X', 'Y'))
 bp <- SerialParam() ## Change if you have access to more cores
 
@@ -158,7 +157,7 @@ regions_counts <- regions[filter, ]
 
 # DE analysis
 Differential expression analysis is carried out at the expressed-region level using `voom`
-and `limma`. Results for each region are plotted using a volcano plot of the $log_2(fold change)$ and $-log_{10}(p-value)$.
+and `limma`. Results for each region are plotted using a volcano plot of the log2(fold change) and -log10(p-value).
 
 
 ```{r voom-er, fig.height = 8, fig.width = 8}
@@ -225,10 +224,8 @@ There are `r length(regions_counts_sig)` statistically significant regions detec
 ```{r visualizing-DERs, fig.height = 8, fig.width = 8}
 
 ## Get Annotation
-
-
 if(!file.exists('genomicState.Hsapiens.BioMart.ENSEMBLMARTENSEMBL.GRCh38.p5.Rdata')) {
-    ## Genomic state created by https://github.com/nellore/runs/blob/master/gtex/DER_analysis/coverageMatrix/genomicState/hg38-genomicState.R
+## Genomic state created by https://github.com/nellore/runs/blob/master/gtex/DER_analysis/coverageMatrix/genomicState/hg38-genomicState.R
     download('https://github.com/nellore/runs/blob/master/gtex/DER_analysis/coverageMatrix/genomicState/genomicState.Hsapiens.BioMart.ENSEMBLMARTENSEMBL.GRCh38.p5.Rdata?raw=true', mode = 'wb', destfile = 'genomicState.Hsapiens.BioMart.ENSEMBLMARTENSEMBL.GRCh38.p5.Rdata')
 }
 
@@ -443,7 +440,35 @@ There are `r length(regions_counts_notinANYgene[regions_counts_notinANYgene$q.mo
 
 These range in size from `r min(width(regions_counts_notinANYgene))` bps to `r max(width(regions_counts_notinANYgene))` bps in length, with a median length of `r median(width(regions_counts_notinANYgene))` bps.
 
+# Compare DERs to known genomic annotation
+Finally, to compare the DER analysis to gene-level results, we must assign each DER to its nearest gene, creating the output file: "AnnotatedDERs.Rdata".
 
+```{r annotated-ders}
+## Assign regions to annotate with their genomic position
+regions = regions_counts
+
+## Obtain annotation information
+ensemblAnno = annotateRegions(regions,gs)
+countTable = ensemblAnno$countTable
+​
+## Assign overlap between regions and genomic annotation
+dA = distanceToNearest(regions_counts, genes)
+regions$nearestSymbol = genes$Entrez[subjectHits(dA)]
+regions$distToGene = mcols(dA)$distance
+mcols(regions) = cbind(mcols(regions), countTable)
+
+## Only include regions that are within genes to compare to gene-level findings
+regions_exons <- regions[regions$exon==1]
+regions_exons_distToGene <- regions_exons[regions_exons$distToGene==0]
+
+## Extract p-value and nearest gene information to be used in comparison to gene-level analysis
+annotatedDERs <- regions_exons_distToGene$p.mod
+names(annotatedDERs) <- regions_exons_distToGene$nearestSymbol​
+
+## Save file for use in comparison analysis
+save(annotatedDERs, file="AnnotatedDERs.Rdata")
+
+```
 
 # Reproducibility
 
