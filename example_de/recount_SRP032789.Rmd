@@ -164,7 +164,7 @@ plot(expr.pca$v[, 1], expr.pca$v[, 2], pch = 19, col = trop[cols], cex = 1.5,
      xlab = 'PC1', ylab = 'PC2',
      main = 'PC (gene level)')
 legend('topright', pch = 19, col = trop[c(1, 2)],
-       names(summary(as.factor(rse$group))))
+       names(summary(as.factor(rse$group))), bg="white")
 ```
 
 Having determined there are no sample outliers in these data, we carry out differential gene expression analysis. Differential gene expression between TNBC and HER2-positive samples are determined using `limma` and `voom`. Differentially expressed genes are visualized using a volcano plot to compare the effect size of the differential expression [ as measured by the $log_2(fold-change)$ in expression ] and its significance [ $-log_10(p-value)$ ].
@@ -332,7 +332,7 @@ plot(expr.pca$v[, 1], expr.pca$v[, 2], pch = 19, col = trop[cols], cex = 1.5,
      xlab = 'PC1', ylab = 'PC2',
      main = 'PC (exon level)')
 legend('topright', pch = 19, col = trop[c(1, 2)],
-       names(summary(as.factor(rse$group))))
+       names(summary(as.factor(rse$group))), bg="white")
 ```
 
 Again, differential expression analysis is carried out using `limma` and `voom`; however, this time at the exon, rather than gene, level. Data are again visualized using a volcano plot to assess the strength [ $log_2(fold-change)$ in expression ] and its significance [ $-log_10(p-value)$ ].for each exon.
@@ -463,7 +463,7 @@ length(jx_gene_id) == dim(counts)[1]
 double_jx <- which(num_genes >1)
 
 ## Check non-unique mapping junctions
-rowData(rse_jx_filt)[double_jx, 'gene_id']
+rowData(rse_jx_filt)[double_jx, 'gene_id_proposed']
 
 ## Set non-unique mapping junctions to "NA" in
 jx_gene_id[double_jx] <- NA
@@ -518,7 +518,7 @@ plot(expr.pca$v[, 1], expr.pca$v[, 2], pch = 19, col = trop[cols], cex = 1.5,
      xlab = 'PC1', ylab = 'PC2',
      main = 'PC (junction level)')
 legend('topright', pch = 19, col = trop[c(1, 2)],
-       names(summary(as.factor(rse$group))))
+       names(summary(as.factor(rse$group))), bg="white")
 ```
 
 Again, differential expression analysis is carried out using `limma` and `voom`; however, this time at the junction, rather than gene, level. Data are again visualized using a volcano plot to assess the strength [ $log_2(fold-change)$ in expression ] and its significance [ $-log_10(p-value)$ ] for each junction.
@@ -576,9 +576,9 @@ for(i in seq_len(length(gene_id))){
     p_exon_gene[i] <- min(p_exon_simes)
 }
 names(p_exon_gene) <- gene_id
-q_exon_gene <- qvalue(p_exon_gene)$q
 
 ## Determine the number of 'gene level exons' differentially expressed q < 0.05
+q_exon_gene <- qvalue(p_exon_gene)$q
 sum(q_exon_gene < 0.05)
 
 
@@ -623,15 +623,13 @@ names(p_jx_gene) <- gene_id
 
 ## Determine the number of 'gene leveljunction' differentially expressed q < 0.05
 q_jx_gene <- qvalue(p_jx_gene)$q
-
-## Determine the number of 'gene level junctions' differentially expressed q < 0.05
 sum(q_jx_gene < 0.05)
 
 
 ## As above, 'topGO' can be utilized to assign biological function to 
 ## differentially expressed exons.
 
-## Gene set analysis (p-values of genes derived with Simes' rule from exon p-values)
+## Gene set analysis (p-values of genes derived with Simes' rule from junction p-values)
 interesting <- function(x) x < 0.05
 
 topgoobjBP <- new('topGOdata',
@@ -668,9 +666,9 @@ for(i in seq_len(length(gene_id))){
     p_DER_gene[i] <- min(p_DER_simes)
 }
 names(p_DER_gene) <- gene_id
-q_DER_gene <- qvalue(p_DER_gene)$q
 
 ## Determine the number of 'gene level DERs' differentially expressed q < 0.05
+q_DER_gene <- qvalue(p_DER_gene)$q
 sum(q_DER_gene < 0.05)
 
 
@@ -753,7 +751,7 @@ for(k in 1:3){
 points(seq(1:length(p.mod1.sort)), conc_jx, type = 'l', lwd = 2, col = trop[2])
 lines(seq(1:length(p.mod1.sort)), conc_exon, lwd = 2,  col = trop[1])
 lines(seq(1:length(p.mod1.sort)), conc_DER, lwd = 2,  col = trop[3])
-legend('topleft', pch = 19, col = trop[c(1, 2, 3)], c("exon", "junction", "DER"))
+legend('topleft', pch = 19, col = trop[c(1, 2, 3)], c("exon", "junction", "DER"), bg="white")
 
 
 ## Top 100 genes
@@ -770,9 +768,9 @@ for(k in 1:5){
     abline(h = k * 20, cex = 0.5, col = 'lightgrey')
 }
 points(seq(1:length(p.mod1.sort[1:100])), conc_jx[1:100], type = 'l', lwd = 2, col = trop[2])
-lines(seq(1:length(p.mod1.sort[1:100])), conc_exon[1:100], lwd = 2,  col = trop[1] )
+lines(seq(1:length(p.mod1.sort[1:100])), conc_exon[1:100], lwd = 2,  col = trop[1])
 lines(seq(1:length(p.mod1.sort[1:100])), conc_DER[1:100], lwd = 2,  col = trop[3])
-legend('topleft', pch = 19, col = trop[c(1, 2, 3)], c("exon", "junction", "DER"))
+legend('topleft', pch = 19, col = trop[c(1, 2, 3)], c("exon", "junction", "DER"), bg="white")
 
 
 
@@ -792,7 +790,7 @@ for(k in 1:5){
 points(seq(1:length(p.mod1.sort[1:1000])), conc_jx[1:1000], type = 'l', lwd = 2, col = trop[2])
 lines(seq(1:length(p.mod1.sort[1:1000])), conc_exon[1:1000], lwd = 2,  col = trop[1] )
 lines(seq(1:length(p.mod1.sort[1:1000])), conc_DER[1:1000], lwd = 2,  col = trop[3])
-legend('topleft', pch = 19, col = trop[c(1, 2, 3)], c("exon", "junction", "DER"))
+legend('topleft', pch = 19, col = trop[c(1, 2, 3)], c("exon", "junction", "DER"), bg="white")
 ```
 
 Concordance can also be calculated looking at the gene ontology (GO) groups identified from the gene and exon level analyses. Again, we plot the agreement between the two analyses such that complete agreement between the two analyses would fall along the identity line.
