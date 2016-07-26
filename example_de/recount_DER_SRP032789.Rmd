@@ -75,8 +75,9 @@ trop <- RSkittleBrewer('tropical')[c(1, 2)]
 ```
 
 # Download study data
-```{r download-study-data}
 Expressed region data are downloaded for each chromosome and summarized into a count matrix (`covMat`) where each region is a row and each sample a column.
+
+```{r download-study-data}
 
 chrs <- paste0('chr', c(1:22, 'X', 'Y'))
 bp <- SerialParam() ## Change if you have access to more cores
@@ -450,7 +451,7 @@ regions = regions_counts
 ## Obtain annotation information
 ensemblAnno = annotateRegions(regions,gs)
 countTable = ensemblAnno$countTable
-​
+
 ## Assign overlap between regions and genomic annotation
 dA = distanceToNearest(regions_counts, genes)
 regions$nearestSymbol = genes$Entrez[subjectHits(dA)]
@@ -463,7 +464,7 @@ regions_exons_distToGene <- regions_exons[regions_exons$distToGene==0]
 
 ## Extract p-value and nearest gene information to be used in comparison to gene-level analysis
 annotatedDERs <- regions_exons_distToGene$p.mod
-names(annotatedDERs) <- regions_exons_distToGene$nearestSymbol​
+names(annotatedDERs) <- regions_exons_distToGene$nearestSymbol
 
 ## Save file for use in comparison analysis
 save(annotatedDERs, file="AnnotatedDERs.Rdata")
