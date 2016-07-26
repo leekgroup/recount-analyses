@@ -367,7 +367,7 @@ These range in size from `r min(width(regions_counts_notingene))` bps to `r max(
 Beyond an interest in those regions not detected in the gene-level analysis, we are also interested in those regions that do not overlap any annotated gene. First, we quantify where DERs are found within the genome that do not overlap any known exons. Then, we highlight single locus coverage plots for a few of the longest DERs.
 
 
-```{r visualizing-DERs-that-do-not-overlap-annotated-exons, fig.height = 10, fig.width = 10}
+```{r visualizing-DERs-that-do-not-overlap-annotated-exons, fig.height = 11, fig.width = 11}
 
 ## For each region, determine if region overlaps with a gene included
 overlapANY <-countOverlaps(regions_counts,gs_exons,type="any")
