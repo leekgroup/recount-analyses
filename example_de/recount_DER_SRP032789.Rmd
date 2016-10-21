@@ -237,11 +237,12 @@ gs_exons <- gs[gs$theRegion =="exon"]
 
 ## Make venn diagram
 ## Venn Diagram for significant DERs (q<0.05)
-annoRegs_sigDER <- annotateRegions(regions_counts_sig, gs, minoverlap = 20)
+annoRegs_sigDER <- annotateRegions(regions_counts_sig, gs, minoverlap = 1)
 #pdf(file = 'plots/VennDiagram_sigDERs.pdf')
 vennRegions(annoRegs_sigDER, main = 'Significant DERs (q<0.05)', counts.col = trop[1])
 #dev.off()
 ```
+
 
 # Gene level analysis
 In order to compare these differentially expressed regions with gene-level results, we must carry out differential expression in these same data at the gene level.
