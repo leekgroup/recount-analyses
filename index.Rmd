@@ -81,7 +81,7 @@ The analyses were made possible thanks to:
 * `r CRANpkg('matrixStats')` `r citep(bib[['matrixStats']])`
 * `r Biocpkg('org.Hs.eg.db')` `r citep(bib[['org.Hs.eg.db']])`
 * `r Biocpkg('qvalue')` `r citep(bib[['qvalue']])`
-* `r Githubpkg('leekgroup/recount')` `r citep(bib[['recount']])`
+* `r Biocpkg('recount')` `r citep(bib[['recount']])`
 * `r CRANpkg('readr')` `r citep(bib[['readr']])`
 * `r CRANpkg('rmarkdown')` `r citep(bib[['rmarkdown']])`
 * `r Githubpkg('alyssafrazee/RSkittleBrewer')` `r citep(bib[['RSkittleBrewer']])`
