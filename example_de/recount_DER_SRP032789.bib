@@ -1,41 +1,34 @@
-@Manual{2016language,
-  title = {R: A Language and Environment for Statistical Computing},
-  author = {{R Core Team}},
-  organization = {R Foundation for Statistical Computing},
-  address = {Vienna, Austria},
+@Manual{morgan2016biocparallel,
+  title = {BiocParallel: Bioconductor facilities for parallel evaluation},
+  author = {Martin Morgan and Valerie Obenchain and Michel Lang and Ryan Thompson},
   year = {2016},
-  url = {https://www.R-project.org/},
+  note = {R package version 1.8.1},
+  url = {https://github.com/Bioconductor/BiocParallel},
 }
 
-@Manual{alexa2016topgo,
-  title = {topGO: Enrichment Analysis for Gene Ontology},
-  author = {Adrian Alexa and Jorg Rahnenfuhrer},
+@Manual{ole2016biocstyle,
+  title = {BiocStyle: Standard styles for vignettes and other Bioconductor documents},
+  author = {Andrzej Ole{\a's} and Martin Morgan and Wolfgang Huber},
   year = {2016},
-  note = {R package version 2.25.0},
+  note = {R package version 2.2.1},
+  url = {https://github.com/Bioconductor/BiocStyle},
 }
 
-@Manual{allaire2016rmarkdown,
-  title = {rmarkdown: Dynamic Documents for R},
-  author = {JJ Allaire and Joe Cheng and Yihui Xie and Jonathan McPherson and Winston Chang and Jeff Allen and Hadley Wickham and Aron Atkins and Rob Hyndman},
+@Article{colladotorres2016flexible,
+  title = {Flexible expressed region analysis for RNA-seq with derfinder},
+  author = {Leonardo Collado-Torres and Abhinav Nellore and Alyssa C. Frazee and Christopher Wilks and Michael I. Love and Ben Langmead and Rafael A. Irizarry and Jeffrey T. Leek and Andrew E. Jaffe},
   year = {2016},
-  note = {R package version 1.0},
-  url = {https://CRAN.R-project.org/package=rmarkdown},
+  journal = {Nucl. Acids Res.},
+  doi = {10.1093/nar/gkw852},
+  url = {http://nar.oxfordjournals.org/content/early/2016/09/29/nar.gkw852},
 }
 
-@Manual{bengtsson2016matrixstats,
-  title = {matrixStats: Functions that Apply to Rows and Columns of Matrices (and to
-Vectors)},
-  author = {Henrik Bengtsson},
+@Manual{wickham2016devtools,
+  title = {devtools: Tools to Make Developing R Packages Easier},
+  author = {Hadley Wickham and Winston Chang},
   year = {2016},
-  note = {R package version 0.50.2},
-  url = {https://CRAN.R-project.org/package=matrixStats},
-}
-
-@Manual{boettigerknitcitations,
-  title = {knitcitations: Citations for 'Knitr' Markdown Files},
-  author = {Carl Boettiger},
-  note = {R package version 1.0.7.1},
-  url = {https://github.com/cboettig/knitcitations},
+  note = {R package version 1.12.0},
+  url = {https://CRAN.R-project.org/package=devtools},
 }
 
 @Manual{chang2015downloader,
@@ -46,28 +39,13 @@ Vectors)},
   url = {https://CRAN.R-project.org/package=downloader},
 }
 
-@Article{colladotorres2016flexible,
-  title = {Flexible expressed region analysis for RNA-seq with derfinder},
-  author = {Leonardo Collado-Torres and Abhinav Nellore and Alyssa C. Frazee and Christopher Wilks and Michael I. Love and Rafael A. Irizarry and Jeffrey T. Leek and Andrew E. Jaffe},
-  year = {2016},
-  journal = {bioRxiv},
-  doi = {10.1101/015370},
-  url = {http://biorxiv.org/content/early/2016/05/07/015370},
-}
-
-@Manual{colladotorres2016recount,
-  title = {recount: Explore and download data from the recount project},
-  author = {Leonardo Collado-Torres and Abhinav Nellore and Jeffrey T. Leek},
-  year = {2016},
-  note = {R package version 0.99.0},
-  url = {https://github.com/leekgroup/recount},
-}
-
-@Manual{frazeerskittlebrewer,
-  title = {RSkittleBrewer: Fun with R Colors},
-  author = {Alyssa Frazee},
-  note = {R package version 1.1},
-  url = {https://github.com/alyssafrazee/RSkittleBrewer},
+@Article{robinson2010edger,
+  title = {edgeR: a Bioconductor package for differential expression analysis of digital gene expression data},
+  author = {Mark D Robinson and Davis J McCarthy and Gordon K Smyth},
+  journal = {Bioinformatics},
+  volume = {26},
+  pages = {-1},
+  year = {2010},
 }
 
 @Article{lawrence2013software,
@@ -81,36 +59,68 @@ Vectors)},
   url = {http://www.ploscompbiol.org/article/info%3Adoi%2F10.1371%2Fjournal.pcbi.1003118},
 }
 
-@Manual{morgan2016biocparallel,
-  title = {BiocParallel: Bioconductor facilities for parallel evaluation},
-  author = {Martin Morgan and Valerie Obenchain and Michel Lang and Ryan Thompson},
+@Manual{boettiger2015knitcitations,
+  title = {knitcitations: Citations for 'Knitr' Markdown Files},
+  author = {Carl Boettiger},
+  year = {2015},
+  note = {R package version 1.0.7},
+  url = {https://CRAN.R-project.org/package=knitcitations},
+}
+
+@Manual{bengtsson2016matrixstats,
+  title = {matrixStats: Functions that Apply to Rows and Columns of Matrices (and to
+Vectors)},
+  author = {Henrik Bengtsson},
   year = {2016},
-  note = {R package version 1.7.5},
-  url = {https://github.com/Bioconductor/BiocParallel},
+  note = {R package version 0.51.0},
+  url = {https://CRAN.R-project.org/package=matrixStats},
+}
+
+@Manual{2016language,
+  title = {R: A Language and Environment for Statistical Computing},
+  author = {{R Core Team}},
+  organization = {R Foundation for Statistical Computing},
+  address = {Vienna, Austria},
+  year = {2016},
+  url = {https://www.R-project.org/},
+}
+
+@Article{colladotorres2016recount,
+  title = {recount: A large-scale resource of analysis-ready RNA-seq expression data},
+  author = {Leonardo Collado-Torres and Abhinav Nellore and Kai Kammers and Shannon E. Ellis and Margaret A. Taub and Kasper D. Hansen and Andrew E. Jaffe and Ben Langmead and Jeffrey T. Leek},
+  year = {2016},
+  journal = {bioRxiv},
+  doi = {10.1101/068478},
+  url = {http://biorxiv.org/content/early/2016/08/08/068478},
+}
+
+@Manual{allaire2016rmarkdown,
+  title = {rmarkdown: Dynamic Documents for R},
+  author = {JJ Allaire and Joe Cheng and Yihui Xie and Jonathan McPherson and Winston Chang and Jeff Allen and Hadley Wickham and Aron Atkins and Rob Hyndman},
+  year = {2016},
+  note = {R package version 1.2},
+  url = {https://CRAN.R-project.org/package=rmarkdown},
+}
+
+@Manual{frazeerskittlebrewer,
+  title = {RSkittleBrewer: Fun with R Colors},
+  author = {Alyssa Frazee},
+  note = {R package version 1.1},
+  url = {https://github.com/alyssafrazee/RSkittleBrewer},
 }
 
 @Manual{morgan2016summarizedexperiment,
   title = {SummarizedExperiment: SummarizedExperiment container},
   author = {Martin Morgan and Valerie Obenchain and Jim Hester and Herv{\a'e} Pag{\a`e}s},
   year = {2016},
-  note = {R package version 1.3.7},
+  note = {R package version 1.4.0},
 }
 
-@Manual{ole2016biocstyle,
-  title = {BiocStyle: Standard styles for vignettes and other Bioconductor documents},
-  author = {Andrzej Ole{\a's} and Martin Morgan and Wolfgang Huber},
+@Manual{alexa2016topgo,
+  title = {topGO: Enrichment Analysis for Gene Ontology},
+  author = {Adrian Alexa and Jorg Rahnenfuhrer},
   year = {2016},
-  note = {R package version 2.1.19},
-  url = {https://github.com/Bioconductor/BiocStyle},
-}
-
-@Article{robinson2010edger,
-  title = {edgeR: a Bioconductor package for differential expression analysis of digital gene expression data},
-  author = {Mark D Robinson and Davis J McCarthy and Gordon K Smyth},
-  journal = {Bioinformatics},
-  volume = {26},
-  pages = {-1},
-  year = {2010},
+  note = {R package version 2.26.0},
 }
 
 @Article{voom,
@@ -120,12 +130,4 @@ Vectors)},
   journal = {Genome Biology},
   volume = {15},
   pages = {R29},
-}
-
-@Manual{wickham2016devtools,
-  title = {devtools: Tools to Make Developing R Packages Easier},
-  author = {Hadley Wickham and Winston Chang},
-  year = {2016},
-  note = {R package version 1.12.0},
-  url = {https://CRAN.R-project.org/package=devtools},
 }

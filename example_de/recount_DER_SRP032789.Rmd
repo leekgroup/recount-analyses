@@ -395,7 +395,6 @@ annoRegs <- annotateRegions(regions, gs, minoverlap = 1)
 
 ## Load full coverage
 SRP032789_urls <- subset(recount_url, project == 'SRP032789' & file_name != 'mean_SRP032789.bw')
-#### Leo! change recount_url$path to recount_url$url for submission ####
 files <- SRP032789_urls$url[grepl('bw$', SRP032789_urls$url)]
 names(files) <- gsub('.bw', '', SRP032789_urls$file_name[grepl('bw$', SRP032789_urls$url)])
 
@@ -486,7 +485,7 @@ This analysis report was made possible thanks to:
 * `r Biocpkg('GenomicRanges')` `r citep(bib[['GenomicRanges']])`
 * `r CRANpkg('knitcitations')` `r citep(bib[['knitcitations']])`
 * `r CRANpkg('matrixStats')` `r citep(bib[['matrixStats']])`
-* `r Githubpkg('leekgroup/recount')` `r citep(bib[['recount']])`
+* `r Biocpkg('recount')` `r citep(bib[['recount']])`
 * `r CRANpkg('rmarkdown')` `r citep(bib[['rmarkdown']])`
 * `r Githubpkg('alyssafrazee/RSkittleBrewer')` `r citep(bib[['RSkittleBrewer']])`
 * `r Biocpkg('SummarizedExperiment')` `r citep(bib[['SummarizedExperiment']])`
