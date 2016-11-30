@@ -524,7 +524,7 @@ This analysis report was made possible thanks to:
 * `r CRANpkg('knitcitations')` `r citep(bib[['knitcitations']])`
 * `r CRANpkg('matrixStats')` `r citep(bib[['matrixStats']])`
 * `r Biocpkg('qvalue')` `r citep(bib[['qvalue']])`
-* `r Githubpkg('leekgroup/recount')` `r citep(bib[['recount']])`
+* `r Biocpkg('recount')` `r citep(bib[['recount']])`
 * `r CRANpkg('rmarkdown')` `r citep(bib[['rmarkdown']])`
 * `r Githubpkg('alyssafrazee/RSkittleBrewer')` `r citep(bib[['RSkittleBrewer']])`
 * `r Biocpkg('SummarizedExperiment')` `r citep(bib[['SummarizedExperiment']])`
