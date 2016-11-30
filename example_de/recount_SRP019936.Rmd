@@ -309,6 +309,41 @@ counts2 <- assays(rse2)$counts
 dim(counts2)
 ```
 
+With count data from both studies, we will run PCA to assess global expression patterns across studies and samples.
+
+
+# Cross-study PCA
+
+```{r Cross-study-PCA, fig.height = 8, fig.width = 8}
+## Combine expression data across studies
+combined_counts <- merge(counts1, counts2, by="row.names")
+rownames(combined_counts) <- combined_counts$Row.names
+combined_counts <- combined_counts[,-1]
+
+#make sure phenotypes are annotated the same way
+combined_pheno <- c(rse1$group,rse2$group)
+combined_pheno <- gsub("Triple Negative Breast Tumor","TNBC Breast Tumor",combined_pheno)
+combined_pheno <- gsub("HER2 Positive Breast Tumor","HER2+ Breast Tumor",combined_pheno)
+
+## Calculate PCs with svd function
+expr.pca <- svd(combined_counts - rowMeans(combined_counts))
+
+## Plot PCs
+par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
+plot(expr.pca$d^2/sum(expr.pca$d^2), pch = 19, col = trop[2], cex = 1.5,
+     ylab = 'Percent of variance explained (gene level)', xlab = 'PC #',
+     main = 'PCs')
+
+## Plot PC1 vs. PC2
+par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
+plot(expr.pca$v[, 1], expr.pca$v[, 2], pch = 19, col = trop[cols], cex = 1.5,
+     xlab = 'PC1', ylab = 'PC2',
+     main = 'PC (gene level) : Across Studies')
+legend('topright', pch = 19, col = trop[c(1, 2)],
+       names(summary(as.factor(combined_pheno)))
+)
+```
+
 Differential gene expression is performed as it was done previously (`recount_SRP032789.Rmd`). Genes found in study 2 (SRP032798) that are also present in study 1 (SRP019936) are included for analysis. Independence hypotheses weighting (IHW) allows for the use of previous findings to be applied as priors to a current analysis as a means to improve power in the current study. Here, absolute values of the test statistic from study 2 were used as weights for the differential expression analysis in study 1 and p-value distributions of the differential expression analysis before and after applying IHW are compared. 
 
 ```{r voom-study2}
