@@ -64,7 +64,7 @@ library('ffpe')
 library('RSkittleBrewer')
 library('SummarizedExperiment')
 library('devtools')
-trop = RSkittleBrewer::RSkittleBrewer('tropical')
+trop <- RSkittleBrewer::RSkittleBrewer('tropical')
 ```
 
 ## Get data sets
@@ -148,7 +148,6 @@ colData(dat[[4]])$tissue <- 'blood'
 ## fifth data set - normals called 'healthy'
 colData(dat[[5]])$normal <- grepl('healthy', unlist(charvec[[5]][1, ]))
 colData(dat[[5]])$tissue <- 'blood'
-
 ```
 
 
@@ -308,7 +307,7 @@ This analysis report was made possible thanks to:
 * `r Biocpkg('ffpe')` `r citep(bib[['ffpe']])`
 * `r CRANpkg('knitcitations')` `r citep(bib[['knitcitations']])`
 * `r CRANpkg('magrittr')` `r citep(bib[['magrittr']])`
-* `r Githubpkg('leekgroup/recount')` `r citep(bib[['recount']])`
+* `r Biocpkg('recount')` `r citep(bib[['recount']])`
 * `r CRANpkg('rmarkdown')` `r citep(bib[['rmarkdown']])`
 * `r Githubpkg('alyssafrazee/RSkittleBrewer')` `r citep(bib[['RSkittleBrewer']])`
 * `r Biocpkg('SummarizedExperiment')` `r citep(bib[['SummarizedExperiment']])`
