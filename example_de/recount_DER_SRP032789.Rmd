@@ -68,7 +68,7 @@ library('BiocParallel')
 library('GenomicRanges')
 library('bumphunter')
 library('downloader')
-library('TxDb.Hsapiens.UCSC.hg38.knownGene')
+library('GenomicFeatures')
 
 ## set colors 
 trop <- RSkittleBrewer('tropical')[c(1, 2)]
@@ -209,7 +209,9 @@ regions_counts_sig <- regions_counts[regions_counts$q.mod < 0.05, ]
 # top <- regions_counts_sig[order(regions_counts_sig$area, decreasing = TRUE)[1:100], ]
 
 ## Annotate significant regions
-genes <- annotateTranscripts(TxDb.Hsapiens.UCSC.hg38.knownGene)
+txdb <- makeTxDbFromGFF('ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human/release_25/gencode.v25.annotation.gff3.gz',
+    format = 'gff3', organism = 'Homo sapiens')
+genes <- annotateTranscripts(txdb)
 
 ## Match detected regions with known gene annotation
 ## Warning: This can take some time
@@ -424,7 +426,7 @@ plotRegionCoverage(regions=regions,
 	nearestAnnotation=nearestAnnotation,
 	annotatedRegions=annoRegs,
 	ask=FALSE,	 whichRegions=1:10, verbose=FALSE, 
-	txdb = TxDb.Hsapiens.UCSC.hg38.knownGene)
+	txdb = txdb)
 dev.off()
 
 ## Example of DER outside of any exonic region
@@ -434,7 +436,7 @@ plotRegionCoverage(regions=regions,
 	nearestAnnotation=nearestAnnotation,
 	annotatedRegions=annoRegs,
 	ask=FALSE,	 whichRegions=6, verbose=FALSE, 
-	txdb = TxDb.Hsapiens.UCSC.hg38.knownGene)
+	txdb = txdb)
 
 ```
 There are `r length(regions_counts_notinANYgene[regions_counts_notinANYgene$q.mod<0.05])` DERs that do not overlap with any known genes.
@@ -482,6 +484,7 @@ This analysis report was made possible thanks to:
 * `r CRANpkg('devtools')` `r citep(bib[['devtools']])`
 * `r CRANpkg('downloader')` `r citep(bib[['downloader']])`
 * `r Biocpkg('edgeR')` `r citep(bib[['edgeR']])`
+* `r Biocpkg('GenomicFeatures')` `r citep(bib[['GenomicFeatures']])`
 * `r Biocpkg('GenomicRanges')` `r citep(bib[['GenomicRanges']])`
 * `r CRANpkg('knitcitations')` `r citep(bib[['knitcitations']])`
 * `r CRANpkg('matrixStats')` `r citep(bib[['matrixStats']])`

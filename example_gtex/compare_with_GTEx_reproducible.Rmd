@@ -50,7 +50,7 @@ names(bib) <- names(bibs)
 This document compares GTEx data release v6 to Recount.  The main issue addressed in this document is mapping up genes and samples between the two datasets.  The annotations are different:
 
 - GTEx uses Gencode v19 mapped to hg19.
-- Recount uses UCSC knownGene as represented by the `TxDb.Hsapiens.UCSC.hg38.knownGene` package, mapped to hg38.
+- Recount uses Gencode v25 mapped to hg38, specifically [this GFF3 file](ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human/release_25/gencode.v25.annotation.gff3.gz).
 
 # Dependencies
 
