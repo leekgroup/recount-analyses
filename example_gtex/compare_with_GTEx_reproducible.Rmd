@@ -117,43 +117,20 @@ rse_gene <- rse_gene[, mm[!is.na(mm)]]
 
 # Mapping GTEx annotation
 
-We map between version by using ENTREZ gene ids.  The Recount representation is already using ENTREZ gene ids, but we need to map GTEx data to ENTREZ.
+We map between version by using Ensembl gene IDs.  
 
 ```{r GTExmap}
+## filter counts
+geneMatch <- match(ballgown:::ss(rownames(gtexCounts), "\\."), 	
+				ballgown:::ss(rowData(rse_gene)$gene_id, "\\."))
+gtexCounts <- gtexCounts[!is.na(geneMatch),]
+rse_gene <- rse_gene[geneMatch[!is.na(geneMatch)],]
+## filter map
 gtexMap <- gtexGtf[!duplicated(gtexGtf$gene_id)]
 names(gtexMap) <- gtexMap$gene_id
 gtexMap <- gtexMap[rownames(gtexCounts)]
-stopifnot(all(rownames(gtexMap) == rownames(gtexCounts)))
-gtexMap$EnsemblGeneID <- ballgown:::ss(gtexMap$gene_id, "\\.")
-eid2ens <- select(org.Hs.eg.db, gtexMap$EnsemblGeneID,
-    "ENTREZID", "ENSEMBL")
-eid2ens <- CharacterList(split(eid2ens$ENTREZID, eid2ens$ENSEMBL))
-gtexMap$EntrezID <- eid2ens[gtexMap$EnsemblGeneID]
-table(elementNROWS(gtexMap$EntrezID))
-table(gtexMap$gene_type, elementNROWS(gtexMap$EntrezID) == 1)
+gtexMap$EnsemblGeneID = ballgown:::ss(names(gtexMap), "\\.")
 ```
-
-Basically, only protein coding genes have a ENTREZ id.  We keep only the protein coding genes which are uniquely mapped to an ENTREZ id.
-
-```{r keepMapping}
-eidIndex <- which(elementNROWS(gtexMap$EntrezID)==1 &
-    gtexMap$gene_type == "protein_coding")
-gtexMap <- gtexMap[eidIndex, ]
-gtexCounts <- gtexCounts[eidIndex, ]
-gtexMap$EntrezID <- sapply(gtexMap$EntrezID, "[", 1)
-```
-
-Now, we still have multiple Ensembl gene ids mapping to the same ENTREZ id.  We drop those as well
-
-```{r dropMultiEntrez}
-dropIDs <- gtexMap$EntrezID[duplicated(gtexMap$EntrezID)]
-keepIdx <- which(!gtexMap$EntrezID %in% dropIDs)
-gtexCounts <- gtexCounts[keepIdx, ]
-gtexMap <- gtexMap[keepIdx, ]
-rownames(gtexCounts) <- names(gtexMap) <- gtexMap$EntrezID
-dim(gtexCounts)
-```
-
 
 Let's load data from Recount.
 
@@ -162,15 +139,6 @@ rse_gene <- scale_counts(rse_gene)
 recountCounts <- assays(rse_gene)$counts
 recountMap <- rowRanges(rse_gene)
 stopifnot(all(colnames(recountCounts) == rownames(gtexPd)))
-
-## match by gene
-geneMatch <- match(recountMap$gene_id, gtexMap$EntrezID)
-recountCounts <- recountCounts[!is.na(geneMatch), ]
-recountMap <- recountMap[!is.na(geneMatch)]
-
-gtexMap <- gtexMap[geneMatch[!is.na(geneMatch)], ]
-gtexCounts <- gtexCounts[geneMatch[!is.na(geneMatch)], ]
-stopifnot(all(rownames(gtexCounts) == rownames(recountCounts)))
 ```
 
 # Comparison
@@ -199,6 +167,24 @@ plot(dens, xlab = "Pearson correlation",
 	main = "Size-scaled counts")
 plot(dens, xlab = "Pearson correlation",
      main = "Size-scaled counts", xlim = c(0.9,1))
+```
+
+```{r rawCounts comparisons_coding}
+ind = which(gtexMap$gene_type == "protein_coding")
+normCors_coding <- sapply(seq_len(nrow(gtexCounts2[ind,])),
+	function(ii) pcor(gtexCounts2[ind[ii], ],  recountCounts2[ind[ii],]))
+summary(normCors_coding)
+sum(normCors_coding <= 0.95, na.rm = TRUE)
+sum(normCors_coding <= 0.80, na.rm = TRUE)
+mean(normCors_coding >= 0.99, na.rm = TRUE)
+```
+
+```{r normCountsPlot_coding, plot = TRUE}
+dens <- density(normCors_coding, from = -1, to = 1, na.rm = TRUE, n = 4096)
+plot(dens, xlab = "Pearson correlation",
+	main = "Size-scaled counts (Protein Coding)")
+plot(dens, xlab = "Pearson correlation",
+     main = "Size-scaled counts (Protein Coding)", xlim = c(0.9,1))
 ```
 
 # Differential expression
@@ -247,11 +233,13 @@ M <- out_recount$log2FC_recount - out_gtex$log2FC_gtex
 A <- ( out_recount$log2FC_recount + out_gtex$log2FC_gtex)/2
 plot(M ~ A, xlab="Average Log2 Fold Change", 
 	ylab="Colon-Blood Difference in log2FCs",
-	pch = 21, bg="grey")
+	pch = 21, bg="grey", main = "All Genes")
+plot(M ~ A, xlab="Average Log2 Fold Change", subset=ind,
+	ylab="Colon-Blood Difference in log2FCs",
+	pch = 21, bg="grey", main = "Protein Coding Genes")
 ```	
 
-The R-squared is `r cor(out_recount$log2FC_recount, out_gtex$log2FC_gtex)^2`
-
+The R-squared is `r cor(out_recount$log2FC_recount, out_gtex$log2FC_gtex)^2` for all `r nrow(out_gtex)` genes and `r cor(out_recount$log2FC_recount[ind], out_gtex$log2FC_gtex[ind])^2` for all `r length(ind)` protein coding genes. 
 # Reproducibility
 
 
