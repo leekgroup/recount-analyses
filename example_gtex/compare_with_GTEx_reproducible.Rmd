@@ -1,6 +1,6 @@
 ---
 author: "Andrew E. Jaffe and Kasper D. Hansen"
-title: Comparison of Recount with GTEx"
+title: Comparison of Recount with GTEx
 date: 'July 18, 2016'
 output:
   BiocStyle::html_document:
@@ -130,6 +130,9 @@ gtexMap <- gtexGtf[!duplicated(gtexGtf$gene_id)]
 names(gtexMap) <- gtexMap$gene_id
 gtexMap <- gtexMap[rownames(gtexCounts)]
 gtexMap$EnsemblGeneID = ballgown:::ss(names(gtexMap), "\\.")
+
+## Number of genes:
+nrow(gtexCounts)
 ```
 
 Let's load data from Recount.
@@ -171,6 +174,8 @@ plot(dens, xlab = "Pearson correlation",
 
 ```{r rawCounts comparisons_coding}
 ind = which(gtexMap$gene_type == "protein_coding")
+## Number of protein coding genes:
+length(ind)
 normCors_coding <- sapply(seq_len(nrow(gtexCounts2[ind,])),
 	function(ii) pcor(gtexCounts2[ind[ii], ],  recountCounts2[ind[ii],]))
 summary(normCors_coding)
@@ -237,9 +242,16 @@ plot(M ~ A, xlab="Average Log2 Fold Change",
 plot(M ~ A, xlab="Average Log2 Fold Change", subset=ind,
 	ylab="Colon-Blood Difference in log2FCs",
 	pch = 21, bg="grey", main = "Protein Coding Genes")
-```	
 
-The R-squared is `r cor(out_recount$log2FC_recount, out_gtex$log2FC_gtex)^2` for all `r nrow(out_gtex)` genes and `r cor(out_recount$log2FC_recount[ind], out_gtex$log2FC_gtex[ind])^2` for all `r length(ind)` protein coding genes. 
+## Genes with M changes greater than 2
+table(abs(M) > 2)
+round(table(abs(M) > 2) / length(M) * 100, 3)
+table(abs(M[ind]) > 2)
+round(table(abs(M[ind]) > 2) / length(ind) * 100, 3)
+```
+
+The R-squared is `r cor(out_recount$log2FC_recount, out_gtex$log2FC_gtex)^2` for all `r nrow(out_gtex)` genes and `r cor(out_recount$log2FC_recount[ind], out_gtex$log2FC_gtex[ind])^2` for all `r length(ind)` protein coding genes.
+
 # Reproducibility
 
 

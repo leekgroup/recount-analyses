@@ -187,6 +187,7 @@ rownames(res_gene) <- rownames(counts)
 
 ## Determine the number of genes differentially expressed at q<0.05
 sum(res_gene$q.mod < 0.05)
+table(res_gene$log2FC[res_gene$q.mod < 0.05] > 0 )
 
 ## Histogram of p-values
 par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
@@ -220,10 +221,16 @@ interesting <- function(x) x < 0.05
 After determining which genes to include for analysis, `topGO` objects are generated and the enrichment tests are run. The Kolomogorov-Smirnov (`ks`) test is used to test for distributional differences. Here, we ask whether each GO group is "enriched" for differentially expressed (`q.mod < 0.05`) genes. Equivalently, we are testing whether the p-value distributions are the same for genes in and outside of each gene ontology. We run tests on the "biological processes" ontology. 
 
 ```{r bp}
+toens <- function(x) {
+    res <- x
+    names(res) <- gsub('\\..*', '', names(x))
+    return(res)
+}
+
 topgoobjBP <- new('topGOdata',
     description = 'biological process',
-    ontology = 'BP', allGenes = q.mod, geneSelectionFun = interesting,
-    annotationFun = annFUN.org, mapping = 'org.Hs.eg.db', ID = 'entrez')
+    ontology = 'BP', allGenes = toens(q.mod), geneSelectionFun = interesting,
+    annotationFun = annFUN.org, mapping = 'org.Hs.eg.db', ID = 'ensembl')
 
 bptest <- runTest(topgoobjBP, algorithm = 'weight01', statistic = 'ks')
 bptest
@@ -354,7 +361,7 @@ res_exon <- data.frame(log2FC, p.mod, q.mod)
 
 ## Determine the number of exons differentially expressed at q<0.05
 sum(res_exon$q.mod < 0.05)
-
+table(res_exon$log2FC[res_exon$q.mod < 0.05] > 0 )
 
 ## Histogram of p-values
 par(font.lab = 2, cex.lab = 1.2, font.axis = 2, cex.axis = 1.2)
@@ -491,7 +498,7 @@ counts_jx <- counts
 counts_jx[1:10, ]
 ```
 
-As above, to get a better sense of the data, we assess the mean-variance relationship for each juction. Similarly, we run principal component analysis (PCA) to identify any sample outliers within the data. We assess the variance explained by each of the first 11 PCs as well as visualize the relationship of each sample in the first two PCs.
+As above, to get a better sense of the data, we assess the mean-variance relationship for each junction. Similarly, we run principal component analysis (PCA) to identify any sample outliers within the data. We assess the variance explained by each of the first 11 PCs as well as visualize the relationship of each sample in the first two PCs.
 
 
 ```{r exploratory-jx, fig.height = 8, fig.width = 8}
@@ -591,8 +598,9 @@ interesting <- function(x) x < 0.05
 
 topgoobjBP <- new('topGOdata',
     description = 'biological process',
-    ontology = 'BP', allGenes = q_exon_gene, geneSelectionFun = interesting,
-    annotationFun = annFUN.org, mapping = 'org.Hs.eg.db', ID = 'entrez')
+    ontology = 'BP', allGenes = toens(q_exon_gene),
+    geneSelectionFun = interesting,
+    annotationFun = annFUN.org, mapping = 'org.Hs.eg.db', ID = 'ensembl')
 
 bptest <- runTest(topgoobjBP, algorithm = 'weight01', statistic = 'ks')
 bptest
@@ -634,8 +642,9 @@ interesting <- function(x) x < 0.05
 
 topgoobjBP <- new('topGOdata',
     description = 'biological process',
-    ontology = 'BP', allGenes = q_jx_gene, geneSelectionFun = interesting,
-    annotationFun = annFUN.org, mapping = 'org.Hs.eg.db', ID = 'entrez')
+    ontology = 'BP', allGenes = toens(q_jx_gene),
+    geneSelectionFun = interesting,
+    annotationFun = annFUN.org, mapping = 'org.Hs.eg.db', ID = 'ensembl')
 
 bptest <- runTest(topgoobjBP, algorithm = 'weight01', statistic = 'ks')
 bptest
@@ -680,8 +689,9 @@ interesting <- function(x) x < 0.05
 
 topgoobjBP <- new('topGOdata',
     description = 'biological process',
-    ontology = 'BP', allGenes = q_DER_gene, geneSelectionFun = interesting,
-    annotationFun = annFUN.org, mapping = 'org.Hs.eg.db', ID = 'entrez')
+    ontology = 'BP', allGenes = toens(q_DER_gene),
+    geneSelectionFun = interesting,
+    annotationFun = annFUN.org, mapping = 'org.Hs.eg.db', ID = 'ensembl')
 
 bptest <- runTest(topgoobjBP, algorithm = 'weight01', statistic = 'ks')
 bptest
@@ -761,7 +771,7 @@ plot(seq(1:length(p.mod1.sort[1:100])), conc_exon[1:100],
      xlim = c(0, 100),
      ylim = c(0, 100),
      xlab = 'ordered genes (gene level)',
-     ylab = 'ordered genes (exon/junction level)',
+     ylab = 'ordered genes (feature level)',
      main = 'Concordance')
 for(k in 1:5){
     abline(v = k * 20, cex = 0.5, col = 'lightgrey')
@@ -771,6 +781,11 @@ points(seq(1:length(p.mod1.sort[1:100])), conc_jx[1:100], type = 'l', lwd = 2, c
 lines(seq(1:length(p.mod1.sort[1:100])), conc_exon[1:100], lwd = 2,  col = trop[1])
 lines(seq(1:length(p.mod1.sort[1:100])), conc_DER[1:100], lwd = 2,  col = trop[3])
 legend('topleft', pch = 19, col = trop[c(1, 2, 3)], c("exon", "junction", "DER"), bg="white")
+
+## Numbers at 100 on the x-axis
+conc_jx[100]
+conc_exon[100]
+conc_DER[100]
 
 
 

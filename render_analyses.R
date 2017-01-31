@@ -43,3 +43,23 @@ sapply(files, render)
 ## the plots)
 sapply(files[-which(files == './index.Rmd')], render,
     output_format = 'pdf_document', clean = FALSE)
+
+## Manually
+library('rmarkdown')
+library('BiocStyle')
+
+render('example_de/recount_DER_SRP032789.Rmd')
+render('example_de/recount_DER_SRP032789.Rmd', output_format = 'pdf_document',
+    clean = FALSE)
+render('example_de/recount_SRP019936.Rmd')
+render('example_de/recount_SRP019936.Rmd', output_format = 'pdf_document',
+    clean = FALSE)
+render('example_de/recount_SRP032789.Rmd')
+render('example_de/recount_SRP032789.Rmd', output_format = 'pdf_document',
+    clean = FALSE)
+render('example_gtex/compare_with_GTEx_reproducible.Rmd')
+render('example_gtex/compare_with_GTEx_reproducible.Rmd',
+    output_format = 'pdf_document', clean = FALSE) 
+render('example_meta/meta_analysis.Rmd')
+render('example_meta/meta_analysis.Rmd', output_format = 'pdf_document',
+    clean = FALSE)
