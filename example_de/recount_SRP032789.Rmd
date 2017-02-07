@@ -7,6 +7,7 @@ output:
     toc: true
   pdf_document:
     toc: true
+    number_sections: true
 ---
 
 
