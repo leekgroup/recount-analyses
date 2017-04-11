@@ -6,7 +6,7 @@ output:
 
 <a href="https://jhubiostatistics.shinyapps.io/recount/"><img src="https://raw.githubusercontent.com/leekgroup/recount-website/master/website/recount.png" align="center"></a>
 
-Example analyses with the [recount](https://github.com/leekgroup/recount) R package using the [recount project](https://jhubiostatistics.shinyapps.io/recount/).
+Example analyses with the [recount](https://github.com/leekgroup/recount) Bioconductor package using the [recount2 project](https://jhubiostatistics.shinyapps.io/recount/).
 
 * [Meta analysis](example_meta/meta_analysis.html) ([PDF](example_meta/meta_analysis.pdf))
 * [Differential expression at the gene and exon levels](example_de/recount_SRP032789.html) ([PDF](example_de/recount_SRP032789.pdf))
