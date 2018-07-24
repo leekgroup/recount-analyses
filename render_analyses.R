@@ -1,12 +1,13 @@
 ## Install all dependencies if needed
 
-source("https://bioconductor.org/biocLite.R")
+install.packages("BiocManager")
 ## No longer needed now that Bioc 3.4 was released in Oct 2016
 # useDevel(TRUE) ## recount requires the devel version of rtracklayer (>= 1.33.10)
 
 
 ## Bioconductor or CRAN packages
-biocLite(c('ballgown', 'BiocParallel', 'BiocStyle', 'coop', 'derfinder',
+BiocManager::install(c(
+    'ballgown', 'BiocParallel', 'BiocStyle', 'coop', 'derfinder',
     'devtools', 'dplyr', 'downloader', 'edgeR', 'ffpe', 'GenomicRanges', 'IHW',
     'knitcitations', 'limma', 'magrittr', 'matrixStats', 'org.Hs.eg.db',
     'qvalue', 'readr', 'recount', 'rmarkdown', 'stringr',
