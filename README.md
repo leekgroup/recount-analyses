@@ -2,3 +2,5 @@
 
 <a href="https://jhubiostatistics.shinyapps.io/recount/"><img src="https://raw.githubusercontent.com/leekgroup/recount-website/master/website/recount.png" align="center"></a>
 
+[![DOI](https://zenodo.org/badge/61042635.svg)](https://zenodo.org/badge/latestdoi/61042635)
+
